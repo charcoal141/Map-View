@@ -88,6 +88,19 @@ html, body {
   background: var(--vscode-toolbar-hoverBackground, #333);
 }
 
+#btn-back {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+#btn-back:hover {
+  background: var(--vscode-toolbar-hoverBackground, #333);
+}
+
 #treemap-container {
   flex: 1;
   overflow: hidden;
@@ -155,6 +168,16 @@ html, body {
   pointer-events: none;
   z-index: 10;
   text-shadow: 0 0 4px var(--bg);
+}
+
+.treemap-group-clickable {
+  pointer-events: auto;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.treemap-group-clickable:hover {
+  background: rgba(255,255,255,0.1);
+  text-decoration: underline;
 }
 
 .legend {

@@ -11,6 +11,7 @@
   const data = window.__DATA__;
   let currentViewMode = 'region';
   let currentTree = data.regionTree;
+  var navStack = [];
 
   init();
 
@@ -29,6 +30,8 @@
     document.getElementById('view-mode').addEventListener('change', function(e) {
       currentViewMode = e.target.value;
       currentTree = currentViewMode === 'module' ? data.moduleTree : data.regionTree;
+      navStack = [];
+      showBackButton(false);
       renderTreemap(currentTree);
     });
 
@@ -42,6 +45,13 @@
         if (vscodeApi) {
           vscodeApi.postMessage({ type: 'configMemory' });
         }
+      });
+    }
+
+    var btnBack = document.getElementById('btn-back');
+    if (btnBack) {
+      btnBack.addEventListener('click', function() {
+        goBack();
       });
     }
 
@@ -203,15 +213,28 @@
     const groups = [];
     collectNodes(root, leaves, groups);
 
-    // Render group labels (depth 1)
+    // Render group labels (depth 1 and 2)
     for (const g of groups) {
       if (g.w < 40 || g.h < 20) continue;
       const label = document.createElement('div');
       label.className = 'treemap-group-label';
+      if (g.depth === 2) {
+        label.className += ' treemap-group-clickable';
+      }
       label.style.left = g.x + 'px';
       label.style.top = g.y + 'px';
       label.style.maxWidth = g.w + 'px';
       label.textContent = g.name + ' (' + formatSize(g.value) + ')';
+
+      // Click to drill down on depth=2 (module level)
+      if (g.depth === 2 && g.children && g.children.length > 0) {
+        (function(node) {
+          label.addEventListener('click', function() {
+            drillDown(node);
+          });
+        })(g);
+      }
+
       container.appendChild(label);
     }
 
@@ -260,6 +283,62 @@
     }
     for (const child of node.children) {
       collectNodes(child, leaves, groups);
+    }
+  }
+
+  // Drill-down navigation
+  function drillDown(node) {
+    navStack.push(currentTree);
+    showBackButton(true);
+
+    if (currentViewMode === 'module') {
+      // Module View: find functions from regionTree by module name
+      var moduleName = node.data ? node.data.name : node.name;
+      var drillTree = buildDrillTreeFromRegion(moduleName);
+      currentTree = drillTree;
+      renderTreemap(drillTree);
+    } else {
+      // Region View: use the clicked node as new root
+      var subTree = node.data || node;
+      currentTree = subTree;
+      renderTreemap(subTree);
+    }
+  }
+
+  function goBack() {
+    if (navStack.length === 0) return;
+    currentTree = navStack.pop();
+    renderTreemap(currentTree);
+    if (navStack.length === 0) showBackButton(false);
+  }
+
+  function showBackButton(visible) {
+    var btn = document.getElementById('btn-back');
+    if (btn) btn.style.display = visible ? 'inline-block' : 'none';
+  }
+
+  function buildDrillTreeFromRegion(moduleName) {
+    var sections = [];
+    collectSectionsForModule(data.regionTree, moduleName, sections);
+    return { name: moduleName, children: sections };
+  }
+
+  function collectSectionsForModule(node, moduleName, result) {
+    if (!node.children || node.children.length === 0) {
+      if (node.objectFile === moduleName || node.name === moduleName) {
+        result.push(node);
+      }
+      return;
+    }
+    // If this node IS the target module, take all its children
+    if (node.name === moduleName && node.children) {
+      for (var i = 0; i < node.children.length; i++) {
+        result.push(node.children[i]);
+      }
+      return;
+    }
+    for (var i = 0; i < node.children.length; i++) {
+      collectSectionsForModule(node.children[i], moduleName, result);
     }
   }
 
