@@ -32,6 +32,7 @@
       currentTree = currentViewMode === 'module' ? data.moduleTree : data.regionTree;
       navStack = [];
       showBackButton(false);
+      showDrillTitle('');
       renderTreemap(currentTree);
     });
 
@@ -275,44 +276,22 @@
     const groups = [];
     collectNodes(root, leaves, groups);
 
-    // Render group labels (depth 1 and 2)
-    for (const g of groups) {
-      if (g.w < 40 || g.h < 20) continue;
-      const label = document.createElement('div');
-      label.className = 'treemap-group-label';
-      label.style.left = g.x + 'px';
-      label.style.top = g.y + 'px';
-      label.style.maxWidth = g.w + 'px';
-      label.textContent = g.name + ' (' + formatSize(g.value) + ')';
-      container.appendChild(label);
-    }
-
-    // Render leaf nodes
+    // Render leaf nodes as module-style blocks with centered name
     for (const leaf of leaves) {
       if (leaf.w < 2 || leaf.h < 2) continue;
 
       const el = document.createElement('div');
-      el.className = 'treemap-node';
+      el.className = 'treemap-module';
       el.style.left = leaf.x + 'px';
       el.style.top = leaf.y + 'px';
       el.style.width = leaf.w + 'px';
       el.style.height = leaf.h + 'px';
       el.style.backgroundColor = COLOR_MAP[leaf.data.category] || '#666';
-      el.dataset.name = leaf.data.name || '';
-      el.dataset.obj = leaf.data.objectFile || leaf.name || '';
 
-      if (leaf.w > 35 && leaf.h > 14) {
-        const lbl = document.createElement('div');
-        lbl.className = 'node-label';
-        lbl.textContent = leaf.data.name || leaf.name;
-        el.appendChild(lbl);
-      }
-      if (leaf.w > 45 && leaf.h > 26) {
-        const sz = document.createElement('div');
-        sz.className = 'node-size';
-        sz.textContent = formatSize(leaf.value);
-        el.appendChild(sz);
-      }
+      var name = leaf.data.name || leaf.name || '';
+      var fontSize = Math.max(9, Math.min(leaf.w / name.length * 1.8, leaf.h * 0.3, 22));
+      el.style.fontSize = fontSize + 'px';
+      el.textContent = name;
 
       el.addEventListener('mouseenter', function(e) { showTooltip(e, leaf); });
       el.addEventListener('mousemove', moveTooltip);
@@ -383,9 +362,13 @@
   }
 
   // Drill-down navigation
+  var drillTitle = ''; // stores the module name for breadcrumb
+
   function drillDown(node) {
     navStack.push(currentTree);
+    drillTitle = node.data ? node.data.name : node.name;
     showBackButton(true);
+    showDrillTitle(drillTitle);
 
     if (currentViewMode === 'module') {
       // Module View: find functions from regionTree by module name
@@ -405,12 +388,23 @@
     if (navStack.length === 0) return;
     currentTree = navStack.pop();
     renderTreemap(currentTree);
-    if (navStack.length === 0) showBackButton(false);
+    if (navStack.length === 0) {
+      showBackButton(false);
+      showDrillTitle('');
+    }
   }
 
   function showBackButton(visible) {
     var btn = document.getElementById('btn-back');
     if (btn) btn.style.display = visible ? 'inline-block' : 'none';
+  }
+
+  function showDrillTitle(title) {
+    var el = document.getElementById('drill-title');
+    if (el) {
+      el.textContent = title;
+      el.style.display = title ? 'inline-block' : 'none';
+    }
   }
 
   function buildDrillTreeFromRegion(moduleName) {
