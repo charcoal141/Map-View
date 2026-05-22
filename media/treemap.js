@@ -133,11 +133,12 @@
 
     if (!node.children || node.children.length === 0) return;
 
-    const padding = depth === 0 ? 0 : (depth === 1 ? 20 : (depth === 2 ? 16 : 2));
-    const innerX = x + (depth > 0 ? 2 : 0);
+    const padding = depth === 0 ? 4 : (depth === 1 ? 22 : (depth === 2 ? 18 : 4));
+    const gap = 3;
+    const innerX = x + gap;
     const innerY = y + padding;
-    const innerW = w - (depth > 0 ? 4 : 0);
-    const innerH = h - padding - (depth > 0 ? 2 : 0);
+    const innerW = w - gap * 2;
+    const innerH = h - padding - gap;
 
     if (innerW <= 0 || innerH <= 0) return;
 
@@ -176,14 +177,15 @@
       const rowSize = isWide ? remainW * rowFraction : remainH * rowFraction;
 
       let offset = 0;
+      const itemGap = 2;
       for (const item of row) {
         const fraction = item.value / rowValue;
         const itemSize = (isWide ? remainH : remainW) * fraction;
 
         if (isWide) {
-          squarify(item, cx, cy + offset, rowSize, itemSize, parentDepth + 1);
+          squarify(item, cx, cy + offset + itemGap, rowSize - itemGap, itemSize - itemGap, parentDepth + 1);
         } else {
-          squarify(item, cx + offset, cy, itemSize, rowSize, parentDepth + 1);
+          squarify(item, cx + offset + itemGap, cy, itemSize - itemGap, rowSize - itemGap, parentDepth + 1);
         }
         offset += itemSize;
       }
