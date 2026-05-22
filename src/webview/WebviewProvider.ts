@@ -9,10 +9,14 @@ interface WebviewData {
 
 export class WebviewProvider {
   private panel: vscode.WebviewPanel | undefined;
+  private currentData: WebviewData | undefined;
+  private filePath: string = '';
 
   constructor(private extensionUri: vscode.Uri) {}
 
   show(filePath: string, data: WebviewData) {
+    this.filePath = filePath;
+    this.currentData = data;
     const fileName = filePath.split(/[\\/]/).pop() || 'MAP Heatmap';
 
     if (this.panel) {
@@ -31,9 +35,55 @@ export class WebviewProvider {
         }
       );
       this.panel.onDidDispose(() => { this.panel = undefined; });
+      this.panel.webview.onDidReceiveMessage(async (msg) => {
+        if (msg.type === 'configMemory') {
+          await this.handleConfigMemory();
+        }
+      });
     }
 
     this.panel.webview.html = this.getHtml(this.panel.webview, data);
+  }
+
+  private async handleConfigMemory() {
+    const config = vscode.workspace.getConfiguration('keilMapHeatmap');
+    const memoryConfig = config.get<Record<string, {rom?: number; ram?: number}>>('memoryConfig', {});
+    const fileName = this.filePath.split(/[\\/]/).pop() || '';
+    const fileConfig = memoryConfig[fileName] || {};
+    const currentRom = fileConfig.rom || 0;
+    const currentRam = fileConfig.ram || 0;
+
+    const romInput = await vscode.window.showInputBox({
+      prompt: `ROM (Flash) size in KB for ${fileName} (0 = use MAP file value)`,
+      value: currentRom.toString(),
+      validateInput: (v) => isNaN(Number(v)) || Number(v) < 0 ? 'Please enter a valid number' : undefined,
+    });
+    if (romInput === undefined) return;
+
+    const ramInput = await vscode.window.showInputBox({
+      prompt: `RAM size in KB for ${fileName} (0 = use MAP file value)`,
+      value: currentRam.toString(),
+      validateInput: (v) => isNaN(Number(v)) || Number(v) < 0 ? 'Please enter a valid number' : undefined,
+    });
+    if (ramInput === undefined) return;
+
+    const romSize = Number(romInput);
+    const ramSize = Number(ramInput);
+
+    memoryConfig[fileName] = { rom: romSize, ram: ramSize };
+    await config.update('memoryConfig', memoryConfig, vscode.ConfigurationTarget.Workspace);
+
+    // Refresh the webview with new config
+    if (this.currentData && this.panel) {
+      const { buildMemorySummary } = require('../transformer/treeBuilder');
+      const { parseMapFile } = require('../parser/index');
+      const content = await vscode.workspace.fs.readFile(vscode.Uri.file(this.filePath));
+      const text = Buffer.from(content).toString('utf-8');
+      const mapData = parseMapFile(text);
+      const summary = buildMemorySummary(mapData, { romSize, ramSize });
+      this.currentData.summary = summary;
+      this.panel.webview.html = this.getHtml(this.panel.webview, this.currentData);
+    }
   }
 
   private getHtml(webview: vscode.Webview, data: WebviewData): string {
@@ -67,6 +117,7 @@ export class WebviewProvider {
         <div class="progress-bar"><div class="progress-fill ram-fill" id="ram-fill"></div></div>
         <span class="usage-text" id="ram-text"></span>
       </div>
+      <button id="btn-config" title="Configure ROM/RAM size">&#9881;</button>
     </div>
     <div class="controls">
       <select id="view-mode">

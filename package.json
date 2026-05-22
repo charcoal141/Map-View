@@ -60,7 +60,17 @@
           "Keil MAP File"
         ]
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Keil MAP Heatmap",
+      "properties": {
+        "keilMapHeatmap.memoryConfig": {
+          "type": "object",
+          "default": {},
+          "description": "Per-file ROM/RAM size overrides in KB. Key is MAP filename, value is {rom, ram}. Example: {\"LM_Series_APP.map\": {\"rom\": 256, \"ram\": 96}}"
+        }
+      }
+    }
   },
   "scripts": {
     "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",

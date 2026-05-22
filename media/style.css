@@ -75,6 +75,19 @@ html, body {
 
 #search { width: 180px; }
 
+#btn-config {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+#btn-config:hover {
+  background: var(--vscode-toolbar-hoverBackground, #333);
+}
+
 #treemap-container {
   flex: 1;
   overflow: hidden;

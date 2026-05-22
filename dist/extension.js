@@ -5,6 +5,9 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
@@ -27,23 +30,11 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/extension.ts
-var extension_exports = {};
-__export(extension_exports, {
-  activate: () => activate,
-  deactivate: () => deactivate
-});
-module.exports = __toCommonJS(extension_exports);
-var vscode2 = __toESM(require("vscode"));
-
 // src/parser/index.ts
-var LOAD_REGION_RE = /Load Region (\S+) \(Base: (0x[\da-f]+), Size: (0x[\da-f]+), Max: (0x[\da-f]+)/i;
-var EXEC_REGION_RE = /Execution Region (\S+) \(Exec base: (0x[\da-f]+), Load base: (0x[\da-f]+), Size: (0x[\da-f]+), Max: (0x[\da-f]+)/i;
-var MEMORY_LINE_RE = /^\s*(0x[\da-f]+)\s+(0x[\da-f]+|-)\s+(0x[\da-f]+)\s+(Code|Data|Zero|PAD)\s+(RO|RW)\s+(\d+)\s+(\*?)\s*(.+?)\s{2,}(\S+)\s*$/i;
-var COMPONENT_LINE_RE = /^\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.+?)\s*$/;
-var TOTALS_LINE_RE = /Total RO\s+Size.*?(\d+)\s*\(/;
-var TOTALS_RW_RE = /Total RW\s+Size.*?(\d+)\s*\(/;
-var TOTALS_ROM_RE = /Total ROM\s+Size.*?(\d+)\s*\(/;
+var parser_exports = {};
+__export(parser_exports, {
+  parseMapFile: () => parseMapFile
+});
 function detectCompilerVersion(firstLine) {
   if (firstLine.includes("Arm Compiler for Embedded") || /Compiler.*6\.\d/.test(firstLine)) {
     return "AC6";
@@ -225,8 +216,27 @@ function parseMapFile(content) {
   }
   return result;
 }
+var LOAD_REGION_RE, EXEC_REGION_RE, MEMORY_LINE_RE, COMPONENT_LINE_RE, TOTALS_LINE_RE, TOTALS_RW_RE, TOTALS_ROM_RE;
+var init_parser = __esm({
+  "src/parser/index.ts"() {
+    "use strict";
+    LOAD_REGION_RE = /Load Region (\S+) \(Base: (0x[\da-f]+), Size: (0x[\da-f]+), Max: (0x[\da-f]+)/i;
+    EXEC_REGION_RE = /Execution Region (\S+) \(Exec base: (0x[\da-f]+), Load base: (0x[\da-f]+), Size: (0x[\da-f]+), Max: (0x[\da-f]+)/i;
+    MEMORY_LINE_RE = /^\s*(0x[\da-f]+)\s+(0x[\da-f]+|-)\s+(0x[\da-f]+)\s+(Code|Data|Zero|PAD)\s+(RO|RW)\s+(\d+)\s+(\*?)\s*(.+?)\s{2,}(\S+)\s*$/i;
+    COMPONENT_LINE_RE = /^\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.+?)\s*$/;
+    TOTALS_LINE_RE = /Total RO\s+Size.*?(\d+)\s*\(/;
+    TOTALS_RW_RE = /Total RW\s+Size.*?(\d+)\s*\(/;
+    TOTALS_ROM_RE = /Total ROM\s+Size.*?(\d+)\s*\(/;
+  }
+});
 
 // src/transformer/treeBuilder.ts
+var treeBuilder_exports = {};
+__export(treeBuilder_exports, {
+  buildMemorySummary: () => buildMemorySummary,
+  buildModuleTree: () => buildModuleTree,
+  buildRegionTree: () => buildRegionTree
+});
 function buildRegionTree(data) {
   const root = { name: "root", children: [] };
   for (const loadRegion of data.loadRegions) {
@@ -290,15 +300,15 @@ function buildModuleTree(data) {
   }
   return root;
 }
-function buildMemorySummary(data) {
+function buildMemorySummary(data, overrides) {
   const romRegion = data.loadRegions[0]?.executionRegions.find(
     (r) => r.name.includes("IROM") || r.execBase >= 134217728 && r.execBase < 536870912
   );
   const ramRegion = data.loadRegions[0]?.executionRegions.find(
     (r) => r.name.includes("IRAM") || r.execBase >= 536870912
   );
-  const romTotal = romRegion?.maxSize || 0;
-  const ramTotal = ramRegion?.maxSize || 0;
+  const romTotal = overrides?.romSize && overrides.romSize > 0 ? overrides.romSize * 1024 : romRegion?.maxSize || 0;
+  const ramTotal = overrides?.ramSize && overrides.ramSize > 0 ? overrides.ramSize * 1024 : ramRegion?.maxSize || 0;
   const romUsed = data.grandTotals.totalROM;
   const ramUsed = data.grandTotals.totalRW;
   return {
@@ -348,14 +358,33 @@ function groupBy(arr, keyFn) {
   }
   return result;
 }
+var init_treeBuilder = __esm({
+  "src/transformer/treeBuilder.ts"() {
+    "use strict";
+  }
+});
+
+// src/extension.ts
+var extension_exports = {};
+__export(extension_exports, {
+  activate: () => activate,
+  deactivate: () => deactivate
+});
+module.exports = __toCommonJS(extension_exports);
+var vscode2 = __toESM(require("vscode"));
+init_parser();
+init_treeBuilder();
 
 // src/webview/WebviewProvider.ts
 var vscode = __toESM(require("vscode"));
 var WebviewProvider = class {
   constructor(extensionUri) {
     this.extensionUri = extensionUri;
+    this.filePath = "";
   }
   show(filePath, data) {
+    this.filePath = filePath;
+    this.currentData = data;
     const fileName = filePath.split(/[\\/]/).pop() || "MAP Heatmap";
     if (this.panel) {
       this.panel.reveal();
@@ -375,8 +404,49 @@ var WebviewProvider = class {
       this.panel.onDidDispose(() => {
         this.panel = void 0;
       });
+      this.panel.webview.onDidReceiveMessage(async (msg) => {
+        if (msg.type === "configMemory") {
+          await this.handleConfigMemory();
+        }
+      });
     }
     this.panel.webview.html = this.getHtml(this.panel.webview, data);
+  }
+  async handleConfigMemory() {
+    const config = vscode.workspace.getConfiguration("keilMapHeatmap");
+    const memoryConfig = config.get("memoryConfig", {});
+    const fileName = this.filePath.split(/[\\/]/).pop() || "";
+    const fileConfig = memoryConfig[fileName] || {};
+    const currentRom = fileConfig.rom || 0;
+    const currentRam = fileConfig.ram || 0;
+    const romInput = await vscode.window.showInputBox({
+      prompt: `ROM (Flash) size in KB for ${fileName} (0 = use MAP file value)`,
+      value: currentRom.toString(),
+      validateInput: (v) => isNaN(Number(v)) || Number(v) < 0 ? "Please enter a valid number" : void 0
+    });
+    if (romInput === void 0)
+      return;
+    const ramInput = await vscode.window.showInputBox({
+      prompt: `RAM size in KB for ${fileName} (0 = use MAP file value)`,
+      value: currentRam.toString(),
+      validateInput: (v) => isNaN(Number(v)) || Number(v) < 0 ? "Please enter a valid number" : void 0
+    });
+    if (ramInput === void 0)
+      return;
+    const romSize = Number(romInput);
+    const ramSize = Number(ramInput);
+    memoryConfig[fileName] = { rom: romSize, ram: ramSize };
+    await config.update("memoryConfig", memoryConfig, vscode.ConfigurationTarget.Workspace);
+    if (this.currentData && this.panel) {
+      const { buildMemorySummary: buildMemorySummary2 } = (init_treeBuilder(), __toCommonJS(treeBuilder_exports));
+      const { parseMapFile: parseMapFile2 } = (init_parser(), __toCommonJS(parser_exports));
+      const content = await vscode.workspace.fs.readFile(vscode.Uri.file(this.filePath));
+      const text = Buffer.from(content).toString("utf-8");
+      const mapData = parseMapFile2(text);
+      const summary = buildMemorySummary2(mapData, { romSize, ramSize });
+      this.currentData.summary = summary;
+      this.panel.webview.html = this.getHtml(this.panel.webview, this.currentData);
+    }
   }
   getHtml(webview, data) {
     const styleUri = webview.asWebviewUri(
@@ -407,6 +477,7 @@ var WebviewProvider = class {
         <div class="progress-bar"><div class="progress-fill ram-fill" id="ram-fill"></div></div>
         <span class="usage-text" id="ram-text"></span>
       </div>
+      <button id="btn-config" title="Configure ROM/RAM size">&#9881;</button>
     </div>
     <div class="controls">
       <select id="view-mode">
@@ -471,9 +542,13 @@ async function openMapHeatmap(uri, context) {
       vscode2.window.showErrorMessage("Failed to parse MAP file: no valid data found");
       return;
     }
+    const config = vscode2.workspace.getConfiguration("keilMapHeatmap");
+    const memoryConfig = config.get("memoryConfig", {});
+    const fileName = uri.fsPath.split(/[\\/]/).pop() || "";
+    const fileConfig = memoryConfig[fileName] || {};
     const regionTree = buildRegionTree(mapData);
     const moduleTree = buildModuleTree(mapData);
-    const summary = buildMemorySummary(mapData);
+    const summary = buildMemorySummary(mapData, { romSize: fileConfig.rom || 0, ramSize: fileConfig.ram || 0 });
     const provider = new WebviewProvider(context.extensionUri);
     provider.show(uri.fsPath, { regionTree, moduleTree, summary });
   } catch (err) {
