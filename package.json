@@ -1,9 +1,9 @@
 {
-  "name": "keil-map-heatmap",
-  "displayName": "Keil MAP Heatmap",
-  "description": "Visualize Keil ARM Compiler .map files as interactive treemap heatmaps",
+  "name": "map-view",
+  "displayName": "Map View",
+  "description": "Visualize embedded .map files (Keil, GCC, ESP-IDF) as interactive treemap heatmaps",
   "version": "0.1.0",
-  "publisher": "keil-map-heatmap",
+  "publisher": "map-view",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -13,6 +13,9 @@
   "keywords": [
     "keil",
     "arm",
+    "gcc",
+    "esp32",
+    "risc-v",
     "map",
     "memory",
     "heatmap",
@@ -25,13 +28,13 @@
     "commands": [
       {
         "command": "keilMapHeatmap.openFile",
-        "title": "Open MAP Heatmap",
-        "category": "Keil MAP"
+        "title": "Open Map View",
+        "category": "Map View"
       },
       {
         "command": "keilMapHeatmap.openActive",
-        "title": "Show Heatmap for Current File",
-        "category": "Keil MAP"
+        "title": "Show Map View for Current File",
+        "category": "Map View"
       }
     ],
     "menus": {
@@ -57,7 +60,7 @@
           ".map"
         ],
         "aliases": [
-          "Keil MAP File"
+          "MAP File"
         ]
       }
     ],

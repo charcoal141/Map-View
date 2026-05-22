@@ -646,10 +646,20 @@ function buildModuleTree(data) {
 }
 function buildMemorySummary(data, overrides) {
   if (data.memoryRegions && data.memoryRegions.length > 0) {
-    const dramRegion = data.memoryRegions.find((r) => r.name === "dram0_0_seg");
-    const iramFlashRegion = data.memoryRegions.find((r) => r.name === "iram0_2_seg");
-    const romTotal2 = overrides?.romSize && overrides.romSize > 0 ? overrides.romSize * 1024 : iramFlashRegion?.length || 0;
-    const ramTotal2 = overrides?.ramSize && overrides.ramSize > 0 ? overrides.ramSize * 1024 : dramRegion?.length || 0;
+    let findRegion2 = function(addr) {
+      return data.memoryRegions.find(
+        (r) => r.length > 0 && addr >= r.origin && addr < r.origin + r.length
+      );
+    };
+    var findRegion = findRegion2;
+    const execRegions = data.loadRegions[0]?.executionRegions || [];
+    const textSection = execRegions.find((r) => r.name === ".text" || r.name.includes("flash.text") || r.name.includes("iram0.text"));
+    const dataSection = execRegions.find((r) => r.name === ".data" || r.name.includes("dram0.data"));
+    const bssSection = execRegions.find((r) => r.name === ".bss" || r.name.includes("dram0.bss"));
+    const romRegion2 = textSection ? findRegion2(textSection.execBase) : void 0;
+    const ramRegion2 = (dataSection ? findRegion2(dataSection.execBase) : void 0) || (bssSection ? findRegion2(bssSection.execBase) : void 0);
+    const romTotal2 = overrides?.romSize && overrides.romSize > 0 ? overrides.romSize * 1024 : romRegion2?.length || 0;
+    const ramTotal2 = overrides?.ramSize && overrides.ramSize > 0 ? overrides.ramSize * 1024 : ramRegion2?.length || 0;
     const romUsed2 = data.grandTotals.totalROM;
     const ramUsed2 = data.grandTotals.totalRW;
     return {
