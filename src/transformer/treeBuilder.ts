@@ -79,6 +79,23 @@ export function buildModuleTree(data: MapFileData): TreeNode {
 }
 
 export function buildMemorySummary(data: MapFileData, overrides?: { romSize?: number; ramSize?: number }): MemorySummary {
+  // ESP32: use memoryRegions for total sizes
+  if (data.memoryRegions && data.memoryRegions.length > 0) {
+    const dramRegion = data.memoryRegions.find(r => r.name === 'dram0_0_seg');
+    const iramFlashRegion = data.memoryRegions.find(r => r.name === 'iram0_2_seg');
+
+    const romTotal = (overrides?.romSize && overrides.romSize > 0) ? overrides.romSize * 1024 : (iramFlashRegion?.length || 0);
+    const ramTotal = (overrides?.ramSize && overrides.ramSize > 0) ? overrides.ramSize * 1024 : (dramRegion?.length || 0);
+    const romUsed = data.grandTotals.totalROM;
+    const ramUsed = data.grandTotals.totalRW;
+
+    return {
+      rom: { used: romUsed, total: romTotal, percent: romTotal > 0 ? (romUsed / romTotal) * 100 : 0 },
+      ram: { used: ramUsed, total: ramTotal, percent: ramTotal > 0 ? (ramUsed / ramTotal) * 100 : 0 },
+    };
+  }
+
+  // Keil: use execution regions
   const romRegion = data.loadRegions[0]?.executionRegions.find(r =>
     r.name.includes('IROM') || r.execBase >= 0x08000000 && r.execBase < 0x20000000
   );
@@ -111,7 +128,16 @@ function categorizeComponents(components: ComponentSize[]): Record<string, Compo
   for (const comp of components) {
     let category: string;
     if (comp.library) {
-      category = 'Compiler Library';
+      // ESP-IDF component detection
+      if (/^lib(esp_|driver|hal|soc|freertos|xtensa|riscv)/.test(comp.library)) {
+        category = 'ESP-IDF System';
+      } else if (/^lib(lwip|mbedtls|mqtt|nghttp|cjson|protobuf)/.test(comp.library)) {
+        category = 'Third Party';
+      } else if (/^lib/.test(comp.library) && comp.objectName.includes('.a(')) {
+        category = 'ESP-IDF Component';
+      } else {
+        category = 'Compiler Library';
+      }
     } else if (/^at32f\d+/.test(comp.objectName)) {
       category = 'Chip Library';
     } else if (/usb|hid|winusb|usbd_/i.test(comp.objectName)) {

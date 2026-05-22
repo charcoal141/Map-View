@@ -43,6 +43,13 @@ export interface ComponentSize {
   member?: string;
 }
 
+export interface MemoryRegion {
+  name: string;
+  origin: number;
+  length: number;
+  attrs: string;
+}
+
 export interface MapFileData {
   compiler: string;
   compilerVersion: CompilerVersion;
@@ -59,6 +66,7 @@ export interface MapFileData {
     totalRW: number;
     totalROM: number;
   };
+  memoryRegions?: MemoryRegion[];
 }
 
 export type ViewMode = 'region' | 'module';

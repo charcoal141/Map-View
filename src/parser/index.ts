@@ -1,4 +1,5 @@
 import { CompilerVersion, MapFileData, MemorySection, SectionType, SectionAttr, LoadRegion, ExecutionRegion } from './types';
+import { parseEsp32MapFile } from './esp32Parser';
 
 enum ParserState {
   Initial,
@@ -46,6 +47,11 @@ function extractFunctionName(sectionName: string, version: CompilerVersion): str
 }
 
 export function parseMapFile(content: string): MapFileData {
+  // Auto-detect GNU ld (ESP-IDF) format
+  if (isGnuLdMap(content)) {
+    return parseEsp32MapFile(content);
+  }
+
   const lines = content.split(/\r?\n/);
   const compilerVersion = detectCompilerVersion(lines[0] || '');
 
@@ -229,4 +235,20 @@ export function parseMapFile(content: string): MapFileData {
   }
 
   return result;
+}
+
+function isGnuLdMap(content: string): boolean {
+  // Check first line for Keil signature - if present, it's not GNU ld
+  const firstLine = content.slice(0, content.indexOf('\n'));
+  if (firstLine.includes('Arm Compiler') || firstLine.includes('Component:')) {
+    return false;
+  }
+  // GNU ld maps start with "Archive member included" or "LOAD" lines
+  // Also check for Memory Configuration deeper in the file
+  const head = content.slice(0, 200);
+  if (head.includes('Archive member included') || head.startsWith('LOAD ')) {
+    return true;
+  }
+  // Fallback: search for Memory Configuration anywhere
+  return content.includes('Memory Configuration') && content.includes('Linker script and memory map');
 }

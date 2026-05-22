@@ -30,6 +30,321 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
+// src/parser/esp32Parser.ts
+function parseEsp32MapFile(content) {
+  const lines = content.split(/\r?\n/);
+  const memoryRegions = [];
+  const outputSections = [];
+  let phase = "scan";
+  let currentSection = null;
+  let lastEntry = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith("Memory Configuration")) {
+      phase = "memconfig";
+      i++;
+      i++;
+      continue;
+    }
+    if (line.startsWith("Linker script and memory map")) {
+      phase = "linkermap";
+      continue;
+    }
+    if (phase === "memconfig") {
+      if (line.trim() === "") {
+        phase = "scan";
+        continue;
+      }
+      const m = line.match(MEMORY_REGION_RE);
+      if (m && m[1] !== "*default*") {
+        memoryRegions.push({
+          name: m[1],
+          origin: parseInt(m[2], 16),
+          length: parseInt(m[3], 16),
+          attrs: m[4]
+        });
+      }
+    }
+    if (phase === "linkermap") {
+      if (line.startsWith("LOAD ") || line.includes(" = "))
+        continue;
+      const secMatch = line.match(OUTPUT_SECTION_RE);
+      if (secMatch) {
+        if (currentSection && currentSection.entries.length > 0) {
+          outputSections.push(currentSection);
+        }
+        currentSection = {
+          name: secMatch[1],
+          address: parseInt(secMatch[2], 16),
+          totalSize: parseInt(secMatch[3], 16),
+          entries: []
+        };
+        lastEntry = null;
+        continue;
+      }
+      if (line.match(/^(\.\S+)\s*$/) && currentSection === null) {
+        const nextLine = lines[i + 1] || "";
+        const contMatch = nextLine.match(/^\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s*$/);
+        if (contMatch) {
+          currentSection = {
+            name: line.trim(),
+            address: parseInt(contMatch[1], 16),
+            totalSize: parseInt(contMatch[2], 16),
+            entries: []
+          };
+          lastEntry = null;
+          i++;
+          continue;
+        }
+      }
+      if (!currentSection)
+        continue;
+      const fillMatch = line.match(FILL_RE);
+      if (fillMatch) {
+        const size = parseInt(fillMatch[2], 16);
+        if (size > 0) {
+          lastEntry = {
+            sectionName: "*fill*",
+            address: parseInt(fillMatch[1], 16),
+            size,
+            objectFile: "*fill*"
+          };
+          currentSection.entries.push(lastEntry);
+        }
+        continue;
+      }
+      const entryMatch = line.match(ENTRY_RE);
+      if (entryMatch) {
+        const size = parseInt(entryMatch[3], 16);
+        if (size > 0) {
+          lastEntry = {
+            sectionName: entryMatch[1],
+            address: parseInt(entryMatch[2], 16),
+            size,
+            objectFile: entryMatch[4].trim()
+          };
+          currentSection.entries.push(lastEntry);
+        }
+        continue;
+      }
+      const contEntryMatch = line.match(ENTRY_CONTINUED_RE);
+      if (contEntryMatch) {
+        const size = parseInt(contEntryMatch[2], 16);
+        const objFile = contEntryMatch[3].trim();
+        if (size > 0 && !objFile.startsWith("0x") && !objFile.includes("(size before")) {
+          lastEntry = {
+            sectionName: "",
+            address: parseInt(contEntryMatch[1], 16),
+            size,
+            objectFile: objFile
+          };
+          currentSection.entries.push(lastEntry);
+        }
+        continue;
+      }
+      const symMatch = line.match(SYMBOL_RE);
+      if (symMatch && lastEntry && !symMatch[2].startsWith(".") && !symMatch[2].startsWith("_")) {
+        if (!lastEntry.functionName) {
+          lastEntry.functionName = symMatch[2];
+        }
+      }
+      if (line.match(/^\.\S+/) && !line.match(/^\s/)) {
+        if (currentSection && currentSection.entries.length > 0) {
+          outputSections.push(currentSection);
+        }
+        const inlineMatch = line.match(/^(\.\S+)\s+(0x[\da-f]+)\s+(0x[\da-f]+)/);
+        if (inlineMatch) {
+          currentSection = {
+            name: inlineMatch[1],
+            address: parseInt(inlineMatch[2], 16),
+            totalSize: parseInt(inlineMatch[3], 16),
+            entries: []
+          };
+        } else {
+          currentSection = null;
+        }
+        lastEntry = null;
+      }
+    }
+  }
+  if (currentSection && currentSection.entries.length > 0) {
+    outputSections.push(currentSection);
+  }
+  return buildMapFileData(outputSections, memoryRegions);
+}
+function classifySectionType(sectionName, parentSection) {
+  const combined = parentSection + " " + sectionName;
+  if (/\.bss|\.noinit|zidata/i.test(combined)) {
+    return { type: "Zero", attr: "RW" };
+  }
+  if (/\.data/i.test(combined) && !/\.rodata/i.test(combined)) {
+    return { type: "Data", attr: "RW" };
+  }
+  if (/\.rodata|drom/i.test(combined)) {
+    return { type: "Data", attr: "RO" };
+  }
+  if (/\.text|\.literal|iram|\.vectors/i.test(combined)) {
+    return { type: "Code", attr: "RO" };
+  }
+  if (sectionName === "*fill*") {
+    return { type: "PAD", attr: "RO" };
+  }
+  if (/iram|flash\.text/i.test(parentSection)) {
+    return { type: "Code", attr: "RO" };
+  }
+  return { type: "Data", attr: "RO" };
+}
+function extractObjectName(objPath) {
+  const libMatch = objPath.match(/([^/]+\.a\(.+?\))/);
+  if (libMatch)
+    return libMatch[1];
+  const objMatch = objPath.match(/([^/]+\.obj)$/);
+  if (objMatch)
+    return objMatch[1];
+  return objPath;
+}
+function extractLibraryName(objPath) {
+  const m = objPath.match(/([^/]+\.a)\(/);
+  return m ? m[1] : void 0;
+}
+function getFunctionFromSection(sectionName) {
+  const m = sectionName.match(/\.(?:text|literal|iram\d*)\.(.+)/);
+  return m ? m[1] : void 0;
+}
+function buildMapFileData(outputSections, memoryRegions) {
+  const runtimeSections = outputSections.filter((sec) => {
+    const name = sec.name.toLowerCase();
+    if (name.startsWith(".debug"))
+      return false;
+    if (name.startsWith(".comment"))
+      return false;
+    if (name.startsWith(".xtensa"))
+      return false;
+    if (name.startsWith(".xt."))
+      return false;
+    if (name === ".noload")
+      return false;
+    if (name.includes("dummy"))
+      return false;
+    if (name === ".ext_ram.dummy")
+      return false;
+    return true;
+  });
+  const loadRegion = {
+    name: "ESP32_FLASH",
+    baseAddr: 0,
+    size: 0,
+    maxSize: 0,
+    executionRegions: []
+  };
+  const compMap = /* @__PURE__ */ new Map();
+  for (const sec of runtimeSections) {
+    if (sec.totalSize === 0)
+      continue;
+    const execRegion = {
+      name: sec.name,
+      execBase: sec.address,
+      loadBase: sec.address,
+      size: sec.totalSize,
+      maxSize: sec.totalSize,
+      sections: []
+    };
+    for (const entry of sec.entries) {
+      const { type, attr } = classifySectionType(entry.sectionName, sec.name);
+      const funcName = entry.functionName || getFunctionFromSection(entry.sectionName);
+      const objName = extractObjectName(entry.objectFile);
+      const memSection = {
+        execAddr: entry.address,
+        loadAddr: null,
+        size: entry.size,
+        type,
+        attr,
+        sectionName: entry.sectionName,
+        objectName: objName,
+        functionName: funcName
+      };
+      execRegion.sections.push(memSection);
+      if (objName !== "*fill*") {
+        if (!compMap.has(objName)) {
+          compMap.set(objName, { code: 0, roData: 0, rwData: 0, ziData: 0, library: extractLibraryName(entry.objectFile) });
+        }
+        const comp = compMap.get(objName);
+        if (type === "Code")
+          comp.code += entry.size;
+        else if (type === "Zero")
+          comp.ziData += entry.size;
+        else if (attr === "RW")
+          comp.rwData += entry.size;
+        else
+          comp.roData += entry.size;
+      }
+    }
+    if (execRegion.sections.length > 0) {
+      loadRegion.executionRegions.push(execRegion);
+    }
+  }
+  loadRegion.size = loadRegion.executionRegions.reduce((s, r) => s + r.size, 0);
+  const componentSizes = [];
+  const libraryMembers = [];
+  for (const [objName, sizes] of compMap) {
+    const comp = {
+      objectName: objName,
+      code: sizes.code,
+      codeIncData: sizes.code,
+      roData: sizes.roData,
+      rwData: sizes.rwData,
+      ziData: sizes.ziData,
+      debug: 0,
+      library: sizes.library
+    };
+    if (sizes.library) {
+      libraryMembers.push(comp);
+    } else {
+      componentSizes.push(comp);
+    }
+  }
+  let totalCode = 0, totalRoData = 0, totalRwData = 0, totalZiData = 0;
+  for (const comp of [...componentSizes, ...libraryMembers]) {
+    totalCode += comp.code;
+    totalRoData += comp.roData;
+    totalRwData += comp.rwData;
+    totalZiData += comp.ziData;
+  }
+  const totalROM = totalCode + totalRoData + totalRwData;
+  const totalRW = totalRwData + totalZiData;
+  return {
+    compiler: "GNU ld (ESP-IDF)",
+    compilerVersion: "AC6",
+    // reuse AC6 for function name extraction compatibility
+    loadRegions: [loadRegion],
+    componentSizes,
+    libraryMembers,
+    librarySizes: [],
+    grandTotals: {
+      code: totalCode,
+      roData: totalRoData,
+      rwData: totalRwData,
+      ziData: totalZiData,
+      totalRO: totalCode + totalRoData,
+      totalRW,
+      totalROM
+    },
+    memoryRegions
+  };
+}
+var MEMORY_REGION_RE, OUTPUT_SECTION_RE, ENTRY_RE, ENTRY_CONTINUED_RE, SYMBOL_RE, FILL_RE;
+var init_esp32Parser = __esm({
+  "src/parser/esp32Parser.ts"() {
+    "use strict";
+    MEMORY_REGION_RE = /^(\S+)\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s+(\S+)\s*$/i;
+    OUTPUT_SECTION_RE = /^(\.\S+)\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s*$/;
+    ENTRY_RE = /^\s+(\.\S+)\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s+(.+)$/;
+    ENTRY_CONTINUED_RE = /^\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s+(.+)$/;
+    SYMBOL_RE = /^\s+(0x[\da-f]+)\s+(\S+)$/;
+    FILL_RE = /^\s+\*fill\*\s+(0x[\da-f]+)\s+(0x[\da-f]+)/;
+  }
+});
+
 // src/parser/index.ts
 var parser_exports = {};
 __export(parser_exports, {
@@ -54,6 +369,9 @@ function extractFunctionName(sectionName, version) {
   }
 }
 function parseMapFile(content) {
+  if (isGnuLdMap(content)) {
+    return parseEsp32MapFile(content);
+  }
   const lines = content.split(/\r?\n/);
   const compilerVersion = detectCompilerVersion(lines[0] || "");
   const result = {
@@ -216,10 +534,22 @@ function parseMapFile(content) {
   }
   return result;
 }
+function isGnuLdMap(content) {
+  const firstLine = content.slice(0, content.indexOf("\n"));
+  if (firstLine.includes("Arm Compiler") || firstLine.includes("Component:")) {
+    return false;
+  }
+  const head = content.slice(0, 200);
+  if (head.includes("Archive member included") || head.startsWith("LOAD ")) {
+    return true;
+  }
+  return content.includes("Memory Configuration") && content.includes("Linker script and memory map");
+}
 var LOAD_REGION_RE, EXEC_REGION_RE, MEMORY_LINE_RE, COMPONENT_LINE_RE, TOTALS_LINE_RE, TOTALS_RW_RE, TOTALS_ROM_RE;
 var init_parser = __esm({
   "src/parser/index.ts"() {
     "use strict";
+    init_esp32Parser();
     LOAD_REGION_RE = /Load Region (\S+) \(Base: (0x[\da-f]+), Size: (0x[\da-f]+), Max: (0x[\da-f]+)/i;
     EXEC_REGION_RE = /Execution Region (\S+) \(Exec base: (0x[\da-f]+), Load base: (0x[\da-f]+), Size: (0x[\da-f]+), Max: (0x[\da-f]+)/i;
     MEMORY_LINE_RE = /^\s*(0x[\da-f]+)\s+(0x[\da-f]+|-)\s+(0x[\da-f]+)\s+(Code|Data|Zero|PAD)\s+(RO|RW)\s+(\d+)\s+(\*?)\s*(.+?)\s{2,}(\S+)\s*$/i;
@@ -301,6 +631,18 @@ function buildModuleTree(data) {
   return root;
 }
 function buildMemorySummary(data, overrides) {
+  if (data.memoryRegions && data.memoryRegions.length > 0) {
+    const dramRegion = data.memoryRegions.find((r) => r.name === "dram0_0_seg");
+    const iramFlashRegion = data.memoryRegions.find((r) => r.name === "iram0_2_seg");
+    const romTotal2 = overrides?.romSize && overrides.romSize > 0 ? overrides.romSize * 1024 : iramFlashRegion?.length || 0;
+    const ramTotal2 = overrides?.ramSize && overrides.ramSize > 0 ? overrides.ramSize * 1024 : dramRegion?.length || 0;
+    const romUsed2 = data.grandTotals.totalROM;
+    const ramUsed2 = data.grandTotals.totalRW;
+    return {
+      rom: { used: romUsed2, total: romTotal2, percent: romTotal2 > 0 ? romUsed2 / romTotal2 * 100 : 0 },
+      ram: { used: ramUsed2, total: ramTotal2, percent: ramTotal2 > 0 ? ramUsed2 / ramTotal2 * 100 : 0 }
+    };
+  }
   const romRegion = data.loadRegions[0]?.executionRegions.find(
     (r) => r.name.includes("IROM") || r.execBase >= 134217728 && r.execBase < 536870912
   );
@@ -332,7 +674,15 @@ function categorizeComponents(components) {
   for (const comp of components) {
     let category;
     if (comp.library) {
-      category = "Compiler Library";
+      if (/^lib(esp_|driver|hal|soc|freertos|xtensa|riscv)/.test(comp.library)) {
+        category = "ESP-IDF System";
+      } else if (/^lib(lwip|mbedtls|mqtt|nghttp|cjson|protobuf)/.test(comp.library)) {
+        category = "Third Party";
+      } else if (/^lib/.test(comp.library) && comp.objectName.includes(".a(")) {
+        category = "ESP-IDF Component";
+      } else {
+        category = "Compiler Library";
+      }
     } else if (/^at32f\d+/.test(comp.objectName)) {
       category = "Chip Library";
     } else if (/usb|hid|winusb|usbd_/i.test(comp.objectName)) {
@@ -545,7 +895,7 @@ async function openMapHeatmap(uri, context) {
     const content = await vscode2.workspace.fs.readFile(uri);
     const text = Buffer.from(content).toString("utf-8");
     const mapData = parseMapFile(text);
-    if (mapData.loadRegions.length === 0 && mapData.componentSizes.length === 0) {
+    if (mapData.loadRegions.length === 0 && mapData.componentSizes.length === 0 && mapData.libraryMembers.length === 0) {
       vscode2.window.showErrorMessage("Failed to parse MAP file: no valid data found");
       return;
     }
