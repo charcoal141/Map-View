@@ -106,6 +106,7 @@ export class WebviewProvider {
 </head>
 <body style="height:100%;margin:0;padding:0;display:flex;flex-direction:column;overflow:hidden;">
   <div id="toolbar">
+    <button id="btn-back" style="display:none;" title="Back">&#8592; Back</button>
     <div class="memory-bars">
       <div class="memory-bar">
         <span class="label">ROM:</span>
@@ -120,7 +121,6 @@ export class WebviewProvider {
       <button id="btn-config" title="Configure ROM/RAM size">&#9881;</button>
     </div>
     <div class="controls">
-      <button id="btn-back" style="display:none;" title="Back">&#8592; Back</button>
       <select id="view-mode">
         <option value="region">Region View</option>
         <option value="module">Module View</option>
