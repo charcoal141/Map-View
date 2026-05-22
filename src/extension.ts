@@ -39,7 +39,7 @@ async function openMapHeatmap(uri: vscode.Uri, context: vscode.ExtensionContext)
 
     const mapData = parseMapFile(text);
 
-    if (mapData.loadRegions.length === 0 && mapData.componentSizes.length === 0) {
+    if (mapData.loadRegions.length === 0 && mapData.componentSizes.length === 0 && mapData.libraryMembers.length === 0) {
       vscode.window.showErrorMessage('Failed to parse MAP file: no valid data found');
       return;
     }
