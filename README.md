@@ -1,12 +1,16 @@
 # Map View
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/logo.png" width="128" alt="Map View Logo">
+</p>
+
 [English](README.md) | [中文](README_CN.md)
 
 Interactive treemap visualization for embedded `.map` files — see where your firmware memory and flash goes at a glance.
 
 Supports **Keil MDK (ARM)**, **GCC (GNU ld)**, **ESP-IDF**, and **ArtInChip (RISC-V)** toolchains.
 
-![Overview](screenshots/1.png)
+![Overview](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/1.png)
 
 ## Features
 
@@ -18,7 +22,7 @@ Supports **Keil MDK (ARM)**, **GCC (GNU ld)**, **ESP-IDF**, and **ArtInChip (RIS
 - **Configurable memory size** — set actual ROM/RAM totals for accurate percentage display
 - **Zero dependencies** — pure TypeScript, no external runtime libraries
 
-![Drill-down view](screenshots/2.png)
+![Drill-down view](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/2.png)
 
 ## Quick Start
 
@@ -35,13 +39,13 @@ Supports **Keil MDK (ARM)**, **GCC (GNU ld)**, **ESP-IDF**, and **ArtInChip (RIS
 | ESP-IDF | xtensa-gcc, riscv32-gcc | ESP32, ESP32-S3, ESP32-C3 |
 | ArtInChip | riscv64-unknown-elf-gcc | D13x, D12x |
 
-![ESP-IDF support](screenshots/3.png)
+![ESP-IDF support](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/3.png)
 
 ## Configuration
 
 Click the gear icon in the toolbar to set ROM/RAM sizes (in KB) for accurate usage percentages. Settings are stored per-file in `.vscode/settings.json`.
 
-![ArtInChip RISC-V support](screenshots/4.png)
+![ArtInChip RISC-V support](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/4.png)
 
 ## Install
 

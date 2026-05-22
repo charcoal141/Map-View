@@ -1,12 +1,16 @@
 # Map View
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/logo.png" width="128" alt="Map View Logo">
+</p>
+
 [English](README.md) | [中文](README_CN.md)
 
 嵌入式 `.map` 文件的交互式 Treemap 可视化工具 — 一眼看清固件内存和flash分布。
 
 支持 **Keil MDK (ARM)**、**GCC (GNU ld)**、**ESP-IDF**、**匠芯创 (RISC-V)** 工具链。
 
-![总览](screenshots/1.png)
+![总览](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/1.png)
 
 ## 功能特性
 
@@ -18,7 +22,7 @@
 - **可配置内存大小** — 设置实际 ROM/RAM 总量，显示准确的使用百分比
 - **零依赖** — 纯 TypeScript 实现，无外部运行时依赖
 
-![下钻视图](screenshots/2.png)
+![下钻视图](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/2.png)
 
 ## 快速开始
 
@@ -35,13 +39,13 @@
 | ESP-IDF | xtensa-gcc、riscv32-gcc | ESP32、ESP32-S3、ESP32-C3 |
 | 匠芯创 | riscv64-unknown-elf-gcc | D13x、D12x |
 
-![ESP-IDF 支持](screenshots/3.png)
+![ESP-IDF 支持](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/3.png)
 
 ## 配置
 
 点击工具栏齿轮图标设置 ROM/RAM 大小（单位 KB），用于计算准确的使用百分比。配置按文件名独立存储在 `.vscode/settings.json` 中。
 
-![匠芯创 RISC-V 支持](screenshots/4.png)
+![匠芯创 RISC-V 支持](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/4.png)
 
 ## 安装
 
