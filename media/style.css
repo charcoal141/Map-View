@@ -106,6 +106,7 @@ html, body {
   overflow: hidden;
   position: relative;
   min-height: 0;
+  padding: 4px;
 }
 
 #tooltip {
@@ -186,7 +187,8 @@ html, body {
   align-items: center;
   justify-content: center;
   text-align: center;
-  border: 1px solid rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px;
   cursor: pointer;
   overflow: hidden;
   color: #fff;
@@ -194,9 +196,13 @@ html, body {
   font-weight: bold;
   word-break: break-all;
   padding: 4px;
+  margin: 1px;
+  transition: border-color 0.15s, transform 0.1s;
 }
 .treemap-module:hover {
-  border-color: rgba(255,255,255,0.6);
+  border-color: rgba(255,255,255,0.7);
+  transform: scale(1.01);
+  z-index: 5;
 }
 
 .legend {
