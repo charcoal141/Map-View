@@ -78,7 +78,7 @@ export function buildModuleTree(data: MapFileData): TreeNode {
   return root;
 }
 
-export function buildMemorySummary(data: MapFileData): MemorySummary {
+export function buildMemorySummary(data: MapFileData, overrides?: { romSize?: number; ramSize?: number }): MemorySummary {
   const romRegion = data.loadRegions[0]?.executionRegions.find(r =>
     r.name.includes('IROM') || r.execBase >= 0x08000000 && r.execBase < 0x20000000
   );
@@ -86,8 +86,8 @@ export function buildMemorySummary(data: MapFileData): MemorySummary {
     r.name.includes('IRAM') || r.execBase >= 0x20000000
   );
 
-  const romTotal = romRegion?.maxSize || 0;
-  const ramTotal = ramRegion?.maxSize || 0;
+  const romTotal = (overrides?.romSize && overrides.romSize > 0) ? overrides.romSize * 1024 : romRegion?.maxSize || 0;
+  const ramTotal = (overrides?.ramSize && overrides.ramSize > 0) ? overrides.ramSize * 1024 : ramRegion?.maxSize || 0;
   const romUsed = data.grandTotals.totalROM;
   const ramUsed = data.grandTotals.totalRW;
 

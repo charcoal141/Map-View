@@ -1,4 +1,5 @@
 (function() {
+  const vscodeApi = (typeof acquireVsCodeApi === 'function') ? acquireVsCodeApi() : null;
   const COLOR_MAP = {
     code: '#4A90D9',
     rodata: '#50B86C',
@@ -34,6 +35,15 @@
     document.getElementById('search').addEventListener('input', function(e) {
       searchHighlight(e.target.value);
     });
+
+    var btnConfig = document.getElementById('btn-config');
+    if (btnConfig) {
+      btnConfig.addEventListener('click', function() {
+        if (vscodeApi) {
+          vscodeApi.postMessage({ type: 'configMemory' });
+        }
+      });
+    }
 
     window.addEventListener('resize', function() {
       renderTreemap(currentTree);

@@ -44,9 +44,14 @@ async function openMapHeatmap(uri: vscode.Uri, context: vscode.ExtensionContext)
       return;
     }
 
+    const config = vscode.workspace.getConfiguration('keilMapHeatmap');
+    const memoryConfig = config.get<Record<string, {rom?: number; ram?: number}>>('memoryConfig', {});
+    const fileName = uri.fsPath.split(/[\\/]/).pop() || '';
+    const fileConfig = memoryConfig[fileName] || {};
+
     const regionTree = buildRegionTree(mapData);
     const moduleTree = buildModuleTree(mapData);
-    const summary = buildMemorySummary(mapData);
+    const summary = buildMemorySummary(mapData, { romSize: fileConfig.rom || 0, ramSize: fileConfig.ram || 0 });
 
     const provider = new WebviewProvider(context.extensionUri);
     provider.show(uri.fsPath, { regionTree, moduleTree, summary });
