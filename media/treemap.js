@@ -148,6 +148,7 @@
   function layoutRow(children, x, y, w, h, totalValue, parentDepth) {
     if (totalValue === 0) return;
 
+    const totalArea = w * h;
     let cx = x, cy = y, remainW = w, remainH = h;
     let remainValue = totalValue;
 
@@ -157,6 +158,9 @@
       const side = isWide ? remainH : remainW;
       if (side <= 0) break;
 
+      // Determine how much area is left
+      const remainArea = (remainValue / totalValue) * totalArea;
+
       const row = [];
       let rowValue = 0;
       let worst = Infinity;
@@ -164,7 +168,8 @@
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const testValue = rowValue + item.value;
-        const testWorst = worstRatio(row.concat(item), testValue, side);
+        // Calculate worst aspect ratio if we add this item to the row
+        const testWorst = worstAspect(row.concat(item), testValue, side, remainArea, remainValue);
         if (testWorst > worst && row.length > 0) break;
         row.push(item);
         rowValue = testValue;
@@ -173,43 +178,44 @@
 
       items.splice(0, row.length);
 
-      const rowFraction = rowValue / remainValue;
-      const rowSize = isWide ? remainW * rowFraction : remainH * rowFraction;
+      // Row thickness: the row takes a strip proportional to its value
+      const rowThickness = (rowValue / remainValue) * (isWide ? remainW : remainH);
 
       let offset = 0;
       const itemGap = 2;
       for (const item of row) {
         const fraction = item.value / rowValue;
-        const itemSize = (isWide ? remainH : remainW) * fraction;
+        const itemLength = fraction * side;
 
         if (isWide) {
-          squarify(item, cx, cy + offset + itemGap, rowSize - itemGap, itemSize - itemGap, parentDepth + 1);
+          squarify(item, cx, cy + offset + itemGap, rowThickness - itemGap, itemLength - itemGap, parentDepth + 1);
         } else {
-          squarify(item, cx + offset + itemGap, cy, itemSize - itemGap, rowSize - itemGap, parentDepth + 1);
+          squarify(item, cx + offset + itemGap, cy, itemLength - itemGap, rowThickness - itemGap, parentDepth + 1);
         }
-        offset += itemSize;
+        offset += itemLength;
       }
 
       if (isWide) {
-        cx += rowSize;
-        remainW -= rowSize;
+        cx += rowThickness;
+        remainW -= rowThickness;
       } else {
-        cy += rowSize;
-        remainH -= rowSize;
+        cy += rowThickness;
+        remainH -= rowThickness;
       }
       remainValue -= rowValue;
     }
   }
 
-  function worstRatio(row, totalValue, side) {
-    if (row.length === 0 || totalValue === 0 || side === 0) return Infinity;
-    const rowArea = side * (totalValue / totalValue) * side;
+  function worstAspect(row, rowSum, side, remainArea, remainValue) {
+    if (row.length === 0 || rowSum === 0 || side === 0 || remainValue === 0) return Infinity;
+    // The row strip has: length = side, thickness = (rowSum / remainValue) * (remainArea / side)
+    const thickness = (rowSum / remainValue) * (remainArea / side);
+    if (thickness === 0) return Infinity;
     let worst = 0;
-    const areaPerUnit = (side * side) / totalValue;
     for (const item of row) {
-      const area = item.value * areaPerUnit;
-      const itemSide = area / side;
-      const ratio = Math.max(side / itemSide, itemSide / side);
+      const itemLength = (item.value / rowSum) * side;
+      if (itemLength === 0) continue;
+      const ratio = Math.max(itemLength / thickness, thickness / itemLength);
       if (ratio > worst) worst = ratio;
     }
     return worst;
