@@ -479,6 +479,12 @@ var WebviewProvider = class {
         <span class="usage-text" id="ram-text"></span>
       </div>
       <button id="btn-config" title="Configure ROM/RAM size">&#9881;</button>
+      <div class="legend">
+        <span class="legend-item" title="Code sections, function instructions"><span class="legend-color" style="background:#4A90D9;"></span>code</span>
+        <span class="legend-item" title="Read-only data, constants and strings"><span class="legend-color" style="background:#50B86C;"></span>rodata</span>
+        <span class="legend-item" title="Read-write data, initialized global/static variables"><span class="legend-color" style="background:#E8943A;"></span>rwdata</span>
+        <span class="legend-item" title="Zero-initialized data, uninitialized global/static variables"><span class="legend-color" style="background:#E05252;"></span>zidata</span>
+      </div>
     </div>
     <div class="controls">
       <select id="view-mode">
