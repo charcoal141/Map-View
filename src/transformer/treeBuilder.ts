@@ -1,4 +1,4 @@
-import { MapFileData, MemorySection, ComponentSize, TreeNode, MemorySummary } from '../parser/types';
+import { MapFileData, MemorySection, MemoryRegion, ComponentSize, TreeNode, MemorySummary } from '../parser/types';
 
 export function buildRegionTree(data: MapFileData): TreeNode {
   const root: TreeNode = { name: 'root', children: [] };
@@ -79,13 +79,28 @@ export function buildModuleTree(data: MapFileData): TreeNode {
 }
 
 export function buildMemorySummary(data: MapFileData, overrides?: { romSize?: number; ramSize?: number }): MemorySummary {
-  // ESP32: use memoryRegions for total sizes
+  // GNU ld: use memoryRegions + section addresses to determine ROM/RAM totals
   if (data.memoryRegions && data.memoryRegions.length > 0) {
-    const dramRegion = data.memoryRegions.find(r => r.name === 'dram0_0_seg');
-    const iramFlashRegion = data.memoryRegions.find(r => r.name === 'iram0_2_seg');
+    const execRegions = data.loadRegions[0]?.executionRegions || [];
 
-    const romTotal = (overrides?.romSize && overrides.romSize > 0) ? overrides.romSize * 1024 : (iramFlashRegion?.length || 0);
-    const ramTotal = (overrides?.ramSize && overrides.ramSize > 0) ? overrides.ramSize * 1024 : (dramRegion?.length || 0);
+    // Find which memory region each section belongs to by address
+    function findRegion(addr: number): MemoryRegion | undefined {
+      return data.memoryRegions!.find(r =>
+        r.length > 0 && addr >= r.origin && addr < r.origin + r.length
+      );
+    }
+
+    // ROM region = where .text lives; RAM region = where .data/.bss lives
+    const textSection = execRegions.find(r => r.name === '.text' || r.name.includes('flash.text') || r.name.includes('iram0.text'));
+    const dataSection = execRegions.find(r => r.name === '.data' || r.name.includes('dram0.data'));
+    const bssSection = execRegions.find(r => r.name === '.bss' || r.name.includes('dram0.bss'));
+
+    const romRegion = textSection ? findRegion(textSection.execBase) : undefined;
+    const ramRegion = (dataSection ? findRegion(dataSection.execBase) : undefined)
+      || (bssSection ? findRegion(bssSection.execBase) : undefined);
+
+    const romTotal = (overrides?.romSize && overrides.romSize > 0) ? overrides.romSize * 1024 : (romRegion?.length || 0);
+    const ramTotal = (overrides?.ramSize && overrides.ramSize > 0) ? overrides.ramSize * 1024 : (ramRegion?.length || 0);
     const romUsed = data.grandTotals.totalROM;
     const ramUsed = data.grandTotals.totalRW;
 
