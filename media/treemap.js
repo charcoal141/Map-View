@@ -475,14 +475,14 @@
   }
 
   function searchHighlight(keyword) {
-    const nodes = document.querySelectorAll('.treemap-node');
+    const nodes = document.querySelectorAll('.treemap-node, .treemap-module');
     const kw = keyword.toLowerCase();
     nodes.forEach(function(el) {
       if (!kw) {
         el.style.opacity = '1';
         return;
       }
-      const name = (el.dataset.name || '').toLowerCase();
+      const name = (el.dataset.name || el.textContent || '').toLowerCase();
       const obj = (el.dataset.obj || '').toLowerCase();
       const match = name.includes(kw) || obj.includes(kw);
       el.style.opacity = match ? '1' : '0.15';
