@@ -2,8 +2,13 @@
   "name": "map-view",
   "displayName": "Map View",
   "description": "Visualize embedded .map files (Keil, GCC, ESP-IDF) as interactive treemap heatmaps",
-  "version": "0.1.0",
-  "publisher": "map-view",
+  "version": "2.4.0",
+  "publisher": "charcoal141",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/charcoal141/Map-View"
+  },
+  "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
   },
