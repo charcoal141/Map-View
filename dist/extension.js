@@ -38,6 +38,7 @@ function parseEsp32MapFile(content) {
   let phase = "scan";
   let currentSection = null;
   let lastEntry = null;
+  let pendingSubSectionName = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.startsWith("Memory Configuration")) {
@@ -111,6 +112,7 @@ function parseEsp32MapFile(content) {
           };
           currentSection.entries.push(lastEntry);
         }
+        pendingSubSectionName = null;
         continue;
       }
       const entryMatch = line.match(ENTRY_RE);
@@ -125,6 +127,12 @@ function parseEsp32MapFile(content) {
           };
           currentSection.entries.push(lastEntry);
         }
+        pendingSubSectionName = null;
+        continue;
+      }
+      const subSecOnly = line.match(/^\s+(\.\S+)\s*$/);
+      if (subSecOnly) {
+        pendingSubSectionName = subSecOnly[1];
         continue;
       }
       const contEntryMatch = line.match(ENTRY_CONTINUED_RE);
@@ -133,13 +141,14 @@ function parseEsp32MapFile(content) {
         const objFile = contEntryMatch[3].trim();
         if (size > 0 && !objFile.startsWith("0x") && !objFile.includes("(size before")) {
           lastEntry = {
-            sectionName: "",
+            sectionName: pendingSubSectionName || "",
             address: parseInt(contEntryMatch[1], 16),
             size,
             objectFile: objFile
           };
           currentSection.entries.push(lastEntry);
         }
+        pendingSubSectionName = null;
         continue;
       }
       const symMatch = line.match(SYMBOL_RE);
@@ -581,7 +590,7 @@ function buildRegionTree(data) {
         const displayName = libMatch ? `[${libMatch[1]}] ${libMatch[2]}` : objName;
         const objNode = {
           name: displayName,
-          children: sections.filter((s) => s.size > 0).map((s) => ({
+          children: mergeSameNameEntries(sections.filter((s) => s.size > 0).map((s) => ({
             name: s.functionName || s.sectionName,
             size: s.size,
             type: s.type,
@@ -589,7 +598,7 @@ function buildRegionTree(data) {
             address: s.execAddr,
             objectFile: objName,
             category: classifySection(s)
-          }))
+          })))
         };
         if (objNode.children.length > 0) {
           regionNode.children.push(objNode);
@@ -707,6 +716,21 @@ function groupBy(arr, keyFn) {
     result[key].push(item);
   }
   return result;
+}
+function mergeSameNameEntries(entries) {
+  const map = /* @__PURE__ */ new Map();
+  for (const entry of entries) {
+    const existing = map.get(entry.name);
+    if (existing && existing.size !== void 0 && entry.size !== void 0) {
+      existing.size += entry.size;
+      if (entry.address !== void 0 && entry.size > existing.size - entry.size) {
+        existing.address = entry.address;
+      }
+    } else {
+      map.set(entry.name, { ...entry });
+    }
+  }
+  return [...map.values()];
 }
 var init_treeBuilder = __esm({
   "src/transformer/treeBuilder.ts"() {

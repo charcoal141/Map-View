@@ -18,7 +18,7 @@ export function buildRegionTree(data: MapFileData): TreeNode {
 
         const objNode: TreeNode = {
           name: displayName,
-          children: sections
+          children: mergeSameNameEntries(sections
             .filter(s => s.size > 0)
             .map(s => ({
               name: s.functionName || s.sectionName,
@@ -28,7 +28,7 @@ export function buildRegionTree(data: MapFileData): TreeNode {
               address: s.execAddr,
               objectFile: objName,
               category: classifySection(s),
-            })),
+            }))),
         };
 
         if (objNode.children!.length > 0) {
@@ -163,4 +163,22 @@ function groupBy<T>(arr: T[], keyFn: (item: T) => string): Record<string, T[]> {
     result[key].push(item);
   }
   return result;
+}
+
+/** Merge entries with the same name (e.g. .literal.foo + .text.foo) by summing their sizes */
+function mergeSameNameEntries(entries: TreeNode[]): TreeNode[] {
+  const map = new Map<string, TreeNode>();
+  for (const entry of entries) {
+    const existing = map.get(entry.name);
+    if (existing && existing.size !== undefined && entry.size !== undefined) {
+      existing.size += entry.size;
+      // Keep the .text address (code) over .literal address
+      if (entry.address !== undefined && entry.size > existing.size - entry.size) {
+        existing.address = entry.address;
+      }
+    } else {
+      map.set(entry.name, { ...entry });
+    }
+  }
+  return [...map.values()];
 }

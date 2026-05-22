@@ -33,6 +33,7 @@ export function parseEsp32MapFile(content: string): MapFileData {
   let phase: 'scan' | 'memconfig' | 'linkermap' = 'scan';
   let currentSection: OutputSection | null = null;
   let lastEntry: SectionEntry | null = null;
+  let pendingSubSectionName: string | null = null;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -117,10 +118,11 @@ export function parseEsp32MapFile(content: string): MapFileData {
           };
           currentSection.entries.push(lastEntry);
         }
+        pendingSubSectionName = null;
         continue;
       }
 
-      // Sub-section entry with object file
+      // Sub-section entry with object file on same line
       const entryMatch = line.match(ENTRY_RE);
       if (entryMatch) {
         const size = parseInt(entryMatch[3], 16);
@@ -133,23 +135,32 @@ export function parseEsp32MapFile(content: string): MapFileData {
           };
           currentSection.entries.push(lastEntry);
         }
+        pendingSubSectionName = null;
         continue;
       }
 
-      // Entry where section name is on previous line (continued)
+      // Sub-section name on its own line (to be continued on next line)
+      const subSecOnly = line.match(/^\s+(\.\S+)\s*$/);
+      if (subSecOnly) {
+        pendingSubSectionName = subSecOnly[1];
+        continue;
+      }
+
+      // Continuation line: address + size + object file (follows a sub-section name line)
       const contEntryMatch = line.match(ENTRY_CONTINUED_RE);
       if (contEntryMatch) {
         const size = parseInt(contEntryMatch[2], 16);
         const objFile = contEntryMatch[3].trim();
         if (size > 0 && !objFile.startsWith('0x') && !objFile.includes('(size before')) {
           lastEntry = {
-            sectionName: '',
+            sectionName: pendingSubSectionName || '',
             address: parseInt(contEntryMatch[1], 16),
             size,
             objectFile: objFile,
           };
           currentSection.entries.push(lastEntry);
         }
+        pendingSubSectionName = null;
         continue;
       }
 
