@@ -47,14 +47,14 @@ export class WebviewProvider {
     const nonce = getNonce();
 
     return `<!DOCTYPE html>
-<html>
+<html style="height:100%;margin:0;padding:0;">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
   <link rel="stylesheet" href="${styleUri}">
 </head>
-<body>
+<body style="height:100%;margin:0;padding:0;display:flex;flex-direction:column;overflow:hidden;">
   <div id="toolbar">
     <div class="memory-bars">
       <div class="memory-bar">
@@ -76,7 +76,7 @@ export class WebviewProvider {
       <input type="text" id="search" placeholder="Search..." />
     </div>
   </div>
-  <div id="treemap-container"></div>
+  <div id="treemap-container" style="flex:1;min-height:0;position:relative;overflow:hidden;"></div>
   <div id="tooltip"></div>
   <script nonce="${nonce}">
     window.__DATA__ = ${JSON.stringify(data)};

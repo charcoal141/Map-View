@@ -57,13 +57,14 @@ export function buildModuleTree(data: MapFileData): TreeNode {
       const totalSize = comp.code + comp.roData + comp.rwData + comp.ziData;
       if (totalSize === 0) continue;
 
+      const displayName = comp.objectName.replace(/\.o$/, '');
       const moduleNode: TreeNode = {
         name: comp.objectName,
         children: [
-          ...(comp.code > 0 ? [{ name: 'Code', size: comp.code, category: 'code' as const }] : []),
-          ...(comp.roData > 0 ? [{ name: 'RO Data', size: comp.roData, category: 'rodata' as const }] : []),
-          ...(comp.rwData > 0 ? [{ name: 'RW Data', size: comp.rwData, category: 'rwdata' as const }] : []),
-          ...(comp.ziData > 0 ? [{ name: 'ZI Data', size: comp.ziData, category: 'zidata' as const }] : []),
+          ...(comp.code > 0 ? [{ name: displayName, size: comp.code, category: 'code' as const, objectFile: comp.objectName }] : []),
+          ...(comp.roData > 0 ? [{ name: displayName + ' [RO]', size: comp.roData, category: 'rodata' as const, objectFile: comp.objectName }] : []),
+          ...(comp.rwData > 0 ? [{ name: displayName + ' [RW]', size: comp.rwData, category: 'rwdata' as const, objectFile: comp.objectName }] : []),
+          ...(comp.ziData > 0 ? [{ name: displayName + ' [ZI]', size: comp.ziData, category: 'zidata' as const, objectFile: comp.objectName }] : []),
         ],
       };
       catNode.children!.push(moduleNode);
