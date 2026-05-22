@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.vsix
+*.map
+.vscode/
+版本更新.md
+AI-PROMPT.md
+.obsidian/
