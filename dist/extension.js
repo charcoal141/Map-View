@@ -204,16 +204,21 @@ function classifySectionType(sectionName, parentSection) {
   return { type: "Data", attr: "RO" };
 }
 function extractObjectName(objPath) {
-  const libMatch = objPath.match(/([^/]+\.a\(.+?\))/);
+  const normalized = objPath.replace(/\\/g, "/");
+  const libMatch = normalized.match(/([^/]+\.a\(.+?\))/);
   if (libMatch)
     return libMatch[1];
-  const objMatch = objPath.match(/([^/]+\.obj)$/);
+  const objMatch = normalized.match(/([^/]+\.obj)$/);
   if (objMatch)
     return objMatch[1];
+  const oMatch = normalized.match(/([^/]+\.o)$/);
+  if (oMatch)
+    return oMatch[1];
   return objPath;
 }
 function extractLibraryName(objPath) {
-  const m = objPath.match(/([^/]+\.a)\(/);
+  const normalized = objPath.replace(/\\/g, "/");
+  const m = normalized.match(/([^/]+\.a)\(/);
   return m ? m[1] : void 0;
 }
 function getFunctionFromSection(sectionName) {
@@ -345,7 +350,7 @@ var MEMORY_REGION_RE, OUTPUT_SECTION_RE, ENTRY_RE, ENTRY_CONTINUED_RE, SYMBOL_RE
 var init_esp32Parser = __esm({
   "src/parser/esp32Parser.ts"() {
     "use strict";
-    MEMORY_REGION_RE = /^(\S+)\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s+(\S+)\s*$/i;
+    MEMORY_REGION_RE = /^(\S+)\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s*(\S*)\s*$/i;
     OUTPUT_SECTION_RE = /^(\.\S+)\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s*$/;
     ENTRY_RE = /^\s+(\.\S+)\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s+(.+)$/;
     ENTRY_CONTINUED_RE = /^\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s+(.+)$/;

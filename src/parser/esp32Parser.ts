@@ -15,7 +15,7 @@ interface OutputSection {
   entries: SectionEntry[];
 }
 
-const MEMORY_REGION_RE = /^(\S+)\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s+(\S+)\s*$/i;
+const MEMORY_REGION_RE = /^(\S+)\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s*(\S*)\s*$/i;
 const OUTPUT_SECTION_RE = /^(\.\S+)\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s*$/;
 const ENTRY_RE = /^\s+(\.\S+)\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s+(.+)$/;
 const ENTRY_CONTINUED_RE = /^\s+(0x[\da-f]+)\s+(0x[\da-f]+)\s+(.+)$/;
@@ -228,17 +228,23 @@ function classifySectionType(sectionName: string, parentSection: string): { type
 }
 
 function extractObjectName(objPath: string): string {
+  // Normalize backslashes to forward slashes
+  const normalized = objPath.replace(/\\/g, '/');
   // "esp-idf/heap/libheap.a(tlsf.c.obj)" -> "libheap.a(tlsf.c.obj)"
-  const libMatch = objPath.match(/([^/]+\.a\(.+?\))/);
+  const libMatch = normalized.match(/([^/]+\.a\(.+?\))/);
   if (libMatch) return libMatch[1];
   // "CMakeFiles/test.elf.dir/project_elf_src_esp32s3.c.obj" -> "project_elf_src_esp32s3.c.obj"
-  const objMatch = objPath.match(/([^/]+\.obj)$/);
+  const objMatch = normalized.match(/([^/]+\.obj)$/);
   if (objMatch) return objMatch[1];
+  // "output/d13x_.../kernel/rt-thread/src/kservice.o" -> "kservice.o"
+  const oMatch = normalized.match(/([^/]+\.o)$/);
+  if (oMatch) return oMatch[1];
   return objPath;
 }
 
 function extractLibraryName(objPath: string): string | undefined {
-  const m = objPath.match(/([^/]+\.a)\(/);
+  const normalized = objPath.replace(/\\/g, '/');
+  const m = normalized.match(/([^/]+\.a)\(/);
   return m ? m[1] : undefined;
 }
 
