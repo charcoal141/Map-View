@@ -95,11 +95,15 @@
   }
 
   function doRender(container, treeData, width, height) {
+    var titleOffset = 0;
+    if (navStack.length > 0 && drillTitle) {
+      titleOffset = 20;
+    }
 
     const root = buildHierarchy(treeData);
     if (!root || root.value === 0) return;
 
-    squarify(root, 0, 0, width, height, 0);
+    squarify(root, 0, titleOffset, width, height - titleOffset, 0);
     renderNodes(container, root, width, height);
   }
 
@@ -276,6 +280,17 @@
     const groups = [];
     collectNodes(root, leaves, groups);
 
+    // Show drill title as group label at top (like ER_IROM1 in top level)
+    if (drillTitle) {
+      const titleLabel = document.createElement('div');
+      titleLabel.className = 'treemap-group-label';
+      titleLabel.style.left = '0px';
+      titleLabel.style.top = '0px';
+      var totalSize = root.value || sumLeaves(leaves);
+      titleLabel.textContent = drillTitle + ' (' + formatSize(totalSize) + ')';
+      container.appendChild(titleLabel);
+    }
+
     // Render leaf nodes as module-style blocks with centered name
     for (const leaf of leaves) {
       if (leaf.w < 2 || leaf.h < 2) continue;
@@ -299,6 +314,12 @@
 
       container.appendChild(el);
     }
+  }
+
+  function sumLeaves(leaves) {
+    var total = 0;
+    for (var i = 0; i < leaves.length; i++) total += (leaves[i].value || 0);
+    return total;
   }
 
   function collectTopLevelNodes(node, groups1, modules) {
@@ -400,11 +421,7 @@
   }
 
   function showDrillTitle(title) {
-    var el = document.getElementById('drill-title');
-    if (el) {
-      el.textContent = title;
-      el.style.display = title ? 'inline-block' : 'none';
-    }
+    // no-op, title is now rendered inside treemap container
   }
 
   function buildDrillTreeFromRegion(moduleName) {

@@ -467,7 +467,6 @@ var WebviewProvider = class {
 <body style="height:100%;margin:0;padding:0;display:flex;flex-direction:column;overflow:hidden;">
   <div id="toolbar">
     <button id="btn-back" style="display:none;" title="Back">&#8592; Back</button>
-    <span id="drill-title" style="display:none;font-weight:bold;font-size:13px;"></span>
     <div class="memory-bars">
       <div class="memory-bar">
         <span class="label">ROM:</span>
