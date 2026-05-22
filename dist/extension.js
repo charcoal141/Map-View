@@ -272,13 +272,14 @@ function buildModuleTree(data) {
       const totalSize = comp.code + comp.roData + comp.rwData + comp.ziData;
       if (totalSize === 0)
         continue;
+      const displayName = comp.objectName.replace(/\.o$/, "");
       const moduleNode = {
         name: comp.objectName,
         children: [
-          ...comp.code > 0 ? [{ name: "Code", size: comp.code, category: "code" }] : [],
-          ...comp.roData > 0 ? [{ name: "RO Data", size: comp.roData, category: "rodata" }] : [],
-          ...comp.rwData > 0 ? [{ name: "RW Data", size: comp.rwData, category: "rwdata" }] : [],
-          ...comp.ziData > 0 ? [{ name: "ZI Data", size: comp.ziData, category: "zidata" }] : []
+          ...comp.code > 0 ? [{ name: displayName, size: comp.code, category: "code", objectFile: comp.objectName }] : [],
+          ...comp.roData > 0 ? [{ name: displayName + " [RO]", size: comp.roData, category: "rodata", objectFile: comp.objectName }] : [],
+          ...comp.rwData > 0 ? [{ name: displayName + " [RW]", size: comp.rwData, category: "rwdata", objectFile: comp.objectName }] : [],
+          ...comp.ziData > 0 ? [{ name: displayName + " [ZI]", size: comp.ziData, category: "zidata", objectFile: comp.objectName }] : []
         ]
       };
       catNode.children.push(moduleNode);
@@ -386,14 +387,14 @@ var WebviewProvider = class {
     );
     const nonce = getNonce();
     return `<!DOCTYPE html>
-<html>
+<html style="height:100%;margin:0;padding:0;">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
   <link rel="stylesheet" href="${styleUri}">
 </head>
-<body>
+<body style="height:100%;margin:0;padding:0;display:flex;flex-direction:column;overflow:hidden;">
   <div id="toolbar">
     <div class="memory-bars">
       <div class="memory-bar">
@@ -415,7 +416,7 @@ var WebviewProvider = class {
       <input type="text" id="search" placeholder="Search..." />
     </div>
   </div>
-  <div id="treemap-container"></div>
+  <div id="treemap-container" style="flex:1;min-height:0;position:relative;overflow:hidden;"></div>
   <div id="tooltip"></div>
   <script nonce="${nonce}">
     window.__DATA__ = ${JSON.stringify(data)};

@@ -15,7 +15,15 @@
 
   function init() {
     updateSummary(data.summary);
-    renderTreemap(currentTree);
+
+    // Wait for layout to complete before first render
+    setTimeout(function() {
+      try {
+        renderTreemap(currentTree);
+      } catch(e) {
+        document.getElementById('treemap-container').textContent = 'Error: ' + e.message + '\n' + e.stack;
+      }
+    }, 100);
 
     document.getElementById('view-mode').addEventListener('change', function(e) {
       currentViewMode = e.target.value;
@@ -51,9 +59,21 @@
     const container = document.getElementById('treemap-container');
     container.innerHTML = '';
 
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    if (width === 0 || height === 0) return;
+    const width = container.clientWidth || container.offsetWidth || document.body.clientWidth;
+    const height = container.clientHeight || container.offsetHeight || (document.body.clientHeight - container.offsetTop);
+    if (width <= 0 || height <= 0) {
+      // Fallback: set explicit height and retry
+      container.style.height = (window.innerHeight - container.offsetTop) + 'px';
+      var retryW = container.clientWidth;
+      var retryH = container.clientHeight;
+      if (retryW <= 0 || retryH <= 0) return;
+      doRender(container, treeData, retryW, retryH);
+      return;
+    }
+    doRender(container, treeData, width, height);
+  }
+
+  function doRender(container, treeData, width, height) {
 
     const root = buildHierarchy(treeData);
     if (!root || root.value === 0) return;
@@ -88,7 +108,7 @@
 
     if (!node.children || node.children.length === 0) return;
 
-    const padding = depth === 0 ? 0 : (depth === 1 ? 20 : 2);
+    const padding = depth === 0 ? 0 : (depth === 1 ? 20 : (depth === 2 ? 16 : 2));
     const innerX = x + (depth > 0 ? 2 : 0);
     const innerY = y + padding;
     const innerW = w - (depth > 0 ? 4 : 0);
@@ -225,7 +245,7 @@
       leaves.push(node);
       return;
     }
-    if (node.depth === 1) {
+    if (node.depth === 1 || node.depth === 2) {
       groups.push(node);
     }
     for (const child of node.children) {
