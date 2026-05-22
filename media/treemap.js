@@ -209,6 +209,68 @@
   }
 
   function renderNodes(container, root, width, height) {
+    if (navStack.length === 0) {
+      renderTopLevel(container, root);
+    } else {
+      renderDetailLevel(container, root);
+    }
+  }
+
+  function renderTopLevel(container, root) {
+    var groups1 = [];
+    var modules = [];
+    collectTopLevelNodes(root, groups1, modules);
+
+    // Render depth=1 group labels
+    for (const g of groups1) {
+      if (g.w < 40 || g.h < 20) continue;
+      const label = document.createElement('div');
+      label.className = 'treemap-group-label';
+      label.style.left = g.x + 'px';
+      label.style.top = g.y + 'px';
+      label.style.maxWidth = g.w + 'px';
+      label.textContent = g.name + ' (' + formatSize(g.value) + ')';
+      container.appendChild(label);
+    }
+
+    // Render depth=2 module blocks with centered name
+    for (const m of modules) {
+      if (m.w < 4 || m.h < 4) continue;
+
+      const el = document.createElement('div');
+      el.className = 'treemap-module';
+      el.style.left = m.x + 'px';
+      el.style.top = m.y + 'px';
+      el.style.width = m.w + 'px';
+      el.style.height = m.h + 'px';
+
+      // Pick color: use dominant category or default
+      var color = getModuleColor(m);
+      el.style.backgroundColor = color;
+
+      // Module name with adaptive font size
+      var name = m.name || '';
+      var fontSize = Math.max(9, Math.min(m.w / name.length * 1.8, m.h * 0.3, 22));
+      el.style.fontSize = fontSize + 'px';
+      el.textContent = name;
+
+      // Tooltip on hover
+      el.addEventListener('mouseenter', function(e) { showModuleTooltip(e, m); });
+      el.addEventListener('mousemove', moveTooltip);
+      el.addEventListener('mouseleave', hideTooltip);
+
+      // Click to drill down
+      (function(node) {
+        el.addEventListener('click', function() {
+          drillDown(node);
+        });
+      })(m);
+
+      container.appendChild(el);
+    }
+  }
+
+  function renderDetailLevel(container, root) {
     const leaves = [];
     const groups = [];
     collectNodes(root, leaves, groups);
@@ -218,23 +280,10 @@
       if (g.w < 40 || g.h < 20) continue;
       const label = document.createElement('div');
       label.className = 'treemap-group-label';
-      if (g.depth === 2) {
-        label.className += ' treemap-group-clickable';
-      }
       label.style.left = g.x + 'px';
       label.style.top = g.y + 'px';
       label.style.maxWidth = g.w + 'px';
       label.textContent = g.name + ' (' + formatSize(g.value) + ')';
-
-      // Click to drill down on depth=2 (module level)
-      if (g.depth === 2 && g.children && g.children.length > 0) {
-        (function(node) {
-          label.addEventListener('click', function() {
-            drillDown(node);
-          });
-        })(g);
-      }
-
       container.appendChild(label);
     }
 
@@ -271,6 +320,53 @@
 
       container.appendChild(el);
     }
+  }
+
+  function collectTopLevelNodes(node, groups1, modules) {
+    if (!node.children || node.children.length === 0) return;
+    for (const child of node.children) {
+      if (child.depth === 1) {
+        groups1.push(child);
+        if (child.children) {
+          for (const m of child.children) {
+            if (m.depth === 2) {
+              modules.push(m);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function getModuleColor(moduleNode) {
+    // Find dominant category among children
+    if (!moduleNode.children || moduleNode.children.length === 0) {
+      var cat = moduleNode.data ? moduleNode.data.category : null;
+      return COLOR_MAP[cat] || '#4A90D9';
+    }
+    var catSizes = {};
+    for (var i = 0; i < moduleNode.children.length; i++) {
+      var c = moduleNode.children[i];
+      var cat = c.data ? c.data.category : 'code';
+      catSizes[cat] = (catSizes[cat] || 0) + (c.value || 0);
+    }
+    var maxCat = 'code';
+    var maxVal = 0;
+    for (var k in catSizes) {
+      if (catSizes[k] > maxVal) { maxVal = catSizes[k]; maxCat = k; }
+    }
+    return COLOR_MAP[maxCat] || '#4A90D9';
+  }
+
+  function showModuleTooltip(event, node) {
+    const tooltip = document.getElementById('tooltip');
+    var name = node.name || (node.data ? node.data.name : '');
+    var html = '<strong>' + name + '</strong><br>';
+    html += 'Size: ' + formatSize(node.value) + '<br>';
+    html += '<em>Click to view details</em>';
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    moveTooltip(event);
   }
 
   function collectNodes(node, leaves, groups) {

@@ -180,6 +180,25 @@ html, body {
   text-decoration: underline;
 }
 
+.treemap-module {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid rgba(0,0,0,0.3);
+  cursor: pointer;
+  overflow: hidden;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  font-weight: bold;
+  word-break: break-all;
+  padding: 4px;
+}
+.treemap-module:hover {
+  border-color: rgba(255,255,255,0.6);
+}
+
 .legend {
   display: flex;
   gap: 12px;
