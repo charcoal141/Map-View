@@ -1,7 +1,7 @@
 {
-  "name": "map-view",
-  "displayName": "Map View",
-  "description": "Visualize embedded .map files (Keil, GCC, ESP-IDF) as interactive treemap heatmaps",
+  "name": "map-view-embedded",
+  "displayName": "Map View Embedded",
+  "description": "A VS Code extension that visualizes embedded .map files as interactive treemap heatmaps — see where your firmware memory goes at a glance.",
   "version": "2.4.0",
   "publisher": "charcoal141",
   "repository": {
@@ -9,6 +9,7 @@
     "url": "https://github.com/charcoal141/Map-View"
   },
   "license": "MIT",
+  "icon": "media/logo.png",
   "engines": {
     "vscode": "^1.85.0"
   },
