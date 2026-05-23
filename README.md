@@ -1,7 +1,7 @@
 # Map View
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/logo.png" width="400" alt="Map View Logo">
+  <img src="https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/logo.png" width="128" alt="Map View Logo">
 </p>
 
 [English](README.md) | [中文](README_CN.md)

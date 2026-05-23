@@ -216,10 +216,23 @@ html, body {
   display: flex;
   align-items: center;
   gap: 4px;
+  cursor: pointer;
 }
 
 .legend-color {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
+}
+
+.legend-tooltip {
+  display: none;
+  margin-left: 4px;
+  color: var(--vscode-descriptionForeground, #999);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.legend-item:hover .legend-tooltip {
+  display: inline;
 }

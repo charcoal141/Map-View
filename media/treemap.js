@@ -17,6 +17,7 @@
 
   function init() {
     updateSummary(data.summary);
+    updateLegendTooltips();
 
     // Wait for layout to complete before first render
     setTimeout(function() {
@@ -499,5 +500,18 @@
     if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
     if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return bytes + ' B';
+  }
+
+  function updateLegendTooltips() {
+    var gt = data.grandTotals;
+    if (!gt) return;
+    var codeEl = document.getElementById('legend-code');
+    var rodataEl = document.getElementById('legend-rodata');
+    var rwdataEl = document.getElementById('legend-rwdata');
+    var zidataEl = document.getElementById('legend-zidata');
+    if (codeEl) codeEl.textContent = 'Code: ' + formatSize(gt.code);
+    if (rodataEl) rodataEl.textContent = 'RO-Data: ' + formatSize(gt.roData);
+    if (rwdataEl) rwdataEl.textContent = 'RW-Data: ' + formatSize(gt.rwData);
+    if (zidataEl) zidataEl.textContent = 'ZI-Data: ' + formatSize(gt.ziData);
   }
 })();
