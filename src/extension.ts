@@ -54,7 +54,7 @@ async function openMapHeatmap(uri: vscode.Uri, context: vscode.ExtensionContext)
     const summary = buildMemorySummary(mapData, { romSize: fileConfig.rom || 0, ramSize: fileConfig.ram || 0 });
 
     const provider = new WebviewProvider(context.extensionUri);
-    provider.show(uri.fsPath, { regionTree, moduleTree, summary });
+    provider.show(uri.fsPath, { regionTree, moduleTree, summary, grandTotals: mapData.grandTotals });
   } catch (err: any) {
     vscode.window.showErrorMessage('Error reading MAP file: ' + err.message);
   }
