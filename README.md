@@ -52,7 +52,7 @@ Click the gear icon in the toolbar to set ROM/RAM sizes (in KB) for accurate usa
 ## Quick Start
 
 1. Use `Ctrl+P` to search and locate the `map` file in your project
-2. Right-click → **Open Map View**, or click the title bar button
+2. Right-click → **Open Map View**
 3. Click modules to drill down, click "Back" to navigate up
 
 ![Quick Start](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/5.png)
