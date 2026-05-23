@@ -51,9 +51,11 @@
 
 ## 快速开始
 
-1. 在 VS Code 中打开任意 `.map` 文件
+1. 使用 `Ctrl+P` 搜索定位项目中的 `map` 文件
 2. 右键 → **Open Map View**，或点击编辑器标题栏按钮
 3. 点击模块下钻查看详情，点击 "Back" 返回上层
+
+![快速开始](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/5.png)
 
 
 ## 注意事项
