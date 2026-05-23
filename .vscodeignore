@@ -1,0 +1,15 @@
+.vscode/**
+.obsidian/**
+src/**
+node_modules/**
+*.map
+!media/**/*.map
+AI-PROMPT.md
+ARCHITECTURE.md
+版本更新.md
+test_summary.js
+tsconfig.json
+.gitignore
+**/*.ts
+screenshots/**
+README_CN.md

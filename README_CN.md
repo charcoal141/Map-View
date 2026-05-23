@@ -6,7 +6,7 @@
 
 [English](README.md) | [中文](README_CN.md)
 
-嵌入式 `.map` 文件的交互式 Treemap 可视化工具 — 一眼看清固件内存和flash分布。
+嵌入式 `.map` 文件的 Treemap 可视化 VS Code 插件 — 一眼看清固件内存和flash分布。
 
 支持 **Keil MDK (ARM)**、**GCC (GNU ld)**、**ESP-IDF**、**匠芯创 (RISC-V)** 工具链。
 
@@ -21,6 +21,7 @@
 - **搜索功能** — 快速定位任意符号、模块或库
 - **可配置内存大小** — 设置实际 ROM/RAM 总量，显示准确的使用百分比
 - **零依赖** — 纯 TypeScript 实现，无外部运行时依赖
+- **超级轻量** — 总共仅 ~100 KB，秒装秒开
 
 ![下钻视图](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/2.png)
 
@@ -49,14 +50,10 @@
 
 ## 安装
 
-```bash
-# 从源码
-git clone https://github.com/charcoal141/Map-View.git
-cd map-view
-npm install
-npm run build
-# 在 VS Code 中按 F5 启动扩展开发宿主
-```
+1. 打开 VS Code
+2. 进入扩展面板（`Ctrl+Shift+X`）
+3. 搜索 **"Map View Embedded"**
+4. 点击 **安装**
 
 ## 命令
 
@@ -64,6 +61,11 @@ npm run build
 |------|------|
 | `Map View: Open Map View` | 通过文件选择器打开 .map 文件 |
 | `Map View: Show Map View for Current File` | 可视化当前编辑器中的 .map 文件 |
+
+## 注意事项
+
+- 显示的 ROM/RAM 用量完全基于 `.map` 文件中的信息。外部存储（如片外 Flash、外部 SRAM）或链接器未报告的区域不会自动显示。
+- 如果显示的总量不准确，请点击工具栏齿轮图标手动配置目标硬件的实际 ROM/RAM 大小。
 
 ## License
 
