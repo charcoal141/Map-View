@@ -25,12 +25,6 @@
 
 ![下钻视图](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/2.png)
 
-## 快速开始
-
-1. 在 VS Code 中打开任意 `.map` 文件
-2. 右键 → **Open Map View**，或点击编辑器标题栏按钮
-3. 点击模块下钻查看详情，点击 "Back" 返回上层
-
 ## 支持的格式
 
 | 工具链 | 编译器 | 示例芯片 |
@@ -55,12 +49,12 @@
 3. 搜索 **"Map View Embedded"**
 4. 点击 **安装**
 
-## 命令
+## 快速开始
 
-| 命令 | 说明 |
-|------|------|
-| `Map View: Open Map View` | 通过文件选择器打开 .map 文件 |
-| `Map View: Show Map View for Current File` | 可视化当前编辑器中的 .map 文件 |
+1. 在 VS Code 中打开任意 `.map` 文件
+2. 右键 → **Open Map View**，或点击编辑器标题栏按钮
+3. 点击模块下钻查看详情，点击 "Back" 返回上层
+
 
 ## 注意事项
 

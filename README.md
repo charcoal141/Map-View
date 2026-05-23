@@ -25,12 +25,6 @@ Supports **Keil MDK (ARM)**, **GCC (GNU ld)**, **ESP-IDF**, and **ArtInChip (RIS
 
 ![Drill-down view](https://raw.githubusercontent.com/charcoal141/Map-View/main/screenshots/2.png)
 
-## Quick Start
-
-1. Open any `.map` file in VS Code
-2. Right-click → **Open Map View**, or click the title bar button
-3. Click modules to drill down, click "Back" to navigate up
-
 ## Supported Formats
 
 | Toolchain | Compiler | Example Chips |
@@ -55,12 +49,11 @@ Click the gear icon in the toolbar to set ROM/RAM sizes (in KB) for accurate usa
 3. Search for **"Map View Embedded"**
 4. Click **Install**
 
-## Commands
+## Quick Start
 
-| Command | Description |
-|---------|-------------|
-| `Map View: Open Map View` | Open a .map file via file picker |
-| `Map View: Show Map View for Current File` | Visualize the active editor's .map file |
+1. Open any `.map` file in VS Code
+2. Right-click → **Open Map View**, or click the title bar button
+3. Click modules to drill down, click "Back" to navigate up
 
 ## Notes
 
