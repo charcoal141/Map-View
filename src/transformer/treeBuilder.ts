@@ -143,17 +143,20 @@ function categorizeComponents(components: ComponentSize[]): Record<string, Compo
   for (const comp of components) {
     let category: string;
     if (comp.library) {
-      // ESP-IDF component detection
-      if (/^lib(esp_|driver|hal|soc|freertos|xtensa|riscv)/.test(comp.library)) {
+      if (/^lib(gcc|c|m|stdc\+\+|gloss|nosys)\.a$/.test(comp.library)) {
+        category = 'Compiler Library';
+      } else if (/^lib(esp_|driver|hal|soc|freertos|xtensa|riscv)/.test(comp.library)) {
         category = 'ESP-IDF System';
       } else if (/^lib(lwip|mbedtls|mqtt|nghttp|cjson|protobuf)/.test(comp.library)) {
         category = 'Third Party';
+      } else if (/^lib(lvgl|lv_|lfs)/.test(comp.library)) {
+        category = 'Third Party';
       } else if (/^lib/.test(comp.library) && comp.objectName.includes('.a(')) {
-        category = 'ESP-IDF Component';
+        category = 'System Library';
       } else {
         category = 'Compiler Library';
       }
-    } else if (/^at32f\d+/.test(comp.objectName)) {
+    } else if (/^(at32f|stm32|gd32)\d+/i.test(comp.objectName)) {
       category = 'Chip Library';
     } else if (/usb|hid|winusb|usbd_/i.test(comp.objectName)) {
       category = 'USB/Middleware';
