@@ -24,6 +24,11 @@ const FILL_RE = /^\s+\*fill\*\s+(0x[\da-f]+)\s+(0x[\da-f]+)/;
 
 // PLACEHOLDER_ESP32_PARSER_CONTINUE
 
+function isLinkerSymbol(name: string): boolean {
+  return /^__(.+_(start|end|size|base|limit)|[A-Z_]+_)$/.test(name) ||
+    /^_(end|start|etext|edata|sbss|ebss|sdata)$/.test(name);
+}
+
 export function parseEsp32MapFile(content: string): MapFileData {
   const lines = content.split(/\r?\n/);
 
@@ -166,9 +171,10 @@ export function parseEsp32MapFile(content: string): MapFileData {
 
       // Exported symbol line
       const symMatch = line.match(SYMBOL_RE);
-      if (symMatch && lastEntry && !symMatch[2].startsWith('.') && !symMatch[2].startsWith('_')) {
-        if (!lastEntry.functionName) {
-          lastEntry.functionName = symMatch[2];
+      if (symMatch && lastEntry && !symMatch[2].startsWith('.')) {
+        const sym = symMatch[2];
+        if (!lastEntry.functionName && !isLinkerSymbol(sym)) {
+          lastEntry.functionName = sym;
         }
       }
 

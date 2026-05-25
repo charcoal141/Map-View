@@ -20,7 +20,8 @@ enum ComponentSubState {
 
 const LOAD_REGION_RE = /Load Region (\S+) \(Base: (0x[\da-f]+), Size: (0x[\da-f]+), Max: (0x[\da-f]+)/i;
 const EXEC_REGION_RE = /Execution Region (\S+) \(Exec base: (0x[\da-f]+), Load base: (0x[\da-f]+), Size: (0x[\da-f]+), Max: (0x[\da-f]+)/i;
-const MEMORY_LINE_RE = /^\s*(0x[\da-f]+)\s+(0x[\da-f]+|-)\s+(0x[\da-f]+)\s+(Code|Data|Zero|PAD)\s+(RO|RW)\s+(\d+)\s+(\*?)\s*(.+?)\s{2,}(\S+)\s*$/i;
+const MEMORY_LINE_RE = /^\s*(0x[\da-f]+)\s+(0x[\da-f]+|-|COMPRESSED)\s+(0x[\da-f]+)\s+(Code|Data|Zero|PAD)\s+(RO|RW)\s+(\d+)\s+(\*?)\s*(.+?)\s{2,}(\S+)\s*$/i;
+const PAD_LINE_RE = /^\s*(0x[\da-f]+)\s+(0x[\da-f]+|-|COMPRESSED)\s+(0x[\da-f]+)\s+PAD\s*$/i;
 const COMPONENT_LINE_RE = /^\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.+?)\s*$/;
 const TOTALS_LINE_RE = /Total RO\s+Size.*?(\d+)\s*\(/;
 const TOTALS_RW_RE = /Total RW\s+Size.*?(\d+)\s*\(/;
@@ -127,7 +128,7 @@ export function parseMapFile(content: string): MapFileData {
           const sectionName = dataMatch[8].trim();
           const section: MemorySection = {
             execAddr: parseInt(dataMatch[1], 16),
-            loadAddr: dataMatch[2] === '-' ? null : parseInt(dataMatch[2], 16),
+            loadAddr: (dataMatch[2] === '-' || dataMatch[2] === 'COMPRESSED') ? null : parseInt(dataMatch[2], 16),
             size: parseInt(dataMatch[3], 16),
             type: dataMatch[4] as SectionType,
             attr: dataMatch[5] as SectionAttr,
@@ -135,6 +136,22 @@ export function parseMapFile(content: string): MapFileData {
             objectName: dataMatch[9],
             functionName: extractFunctionName(sectionName, compilerVersion),
             isOutlinedFunction: /^\.text\.OUTLINED_FUNCTION_\d+$/.test(sectionName),
+          };
+          currentExecRegion?.sections.push(section);
+          break;
+        }
+
+        // PAD-only line (no attr/index/section/object)
+        const padMatch = line.match(PAD_LINE_RE);
+        if (padMatch) {
+          const section: MemorySection = {
+            execAddr: parseInt(padMatch[1], 16),
+            loadAddr: (padMatch[2] === '-' || padMatch[2] === 'COMPRESSED') ? null : parseInt(padMatch[2], 16),
+            size: parseInt(padMatch[3], 16),
+            type: 'PAD',
+            attr: 'RO',
+            sectionName: 'PAD',
+            objectName: '[PAD]',
           };
           currentExecRegion?.sections.push(section);
         }
