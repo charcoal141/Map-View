@@ -13,3 +13,6 @@ tsconfig.json
 **/*.ts
 screenshots/**
 README_CN.md
+.codegraph/**
+.cursor/**
+test_map/**
