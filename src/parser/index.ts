@@ -20,8 +20,11 @@ enum ComponentSubState {
 
 const LOAD_REGION_RE = /Load Region (\S+) \(Base: (0x[\da-f]+), Size: (0x[\da-f]+), Max: (0x[\da-f]+)/i;
 const EXEC_REGION_RE = /Execution Region (\S+) \(Exec base: (0x[\da-f]+), Load base: (0x[\da-f]+), Size: (0x[\da-f]+), Max: (0x[\da-f]+)/i;
+const EIDE_EXEC_REGION_RE = /Execution Region (\S+) \(Base: (0x[\da-f]+), Size: (0x[\da-f]+), Max: (0x[\da-f]+)/i;
 const MEMORY_LINE_RE = /^\s*(0x[\da-f]+)\s+(0x[\da-f]+|-|COMPRESSED)\s+(0x[\da-f]+)\s+(Code|Data|Zero|PAD)\s+(RO|RW)\s+(\d+)\s+(\*?)\s*(.+?)\s{2,}(\S+)\s*$/i;
+const EIDE_MEMORY_LINE_RE = /^\s*(0x[\da-f]+)\s+(0x[\da-f]+)\s+(Code|Data|Zero|PAD)\s+(RO|RW)\s+(\d+)\s+(\*?)\s*(.+?)\s{2,}(\S+)\s*$/i;
 const PAD_LINE_RE = /^\s*(0x[\da-f]+)\s+(0x[\da-f]+|-|COMPRESSED)\s+(0x[\da-f]+)\s+PAD\s*$/i;
+const EIDE_PAD_LINE_RE = /^\s*(0x[\da-f]+)\s+(0x[\da-f]+)\s+PAD\s*$/i;
 const COMPONENT_LINE_RE = /^\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.+?)\s*$/;
 const TOTALS_LINE_RE = /Total RO\s+Size.*?(\d+)\s*\(/;
 const TOTALS_RW_RE = /Total RW\s+Size.*?(\d+)\s*\(/;
@@ -109,13 +112,19 @@ export function parseMapFile(content: string): MapFileData {
 
         // Execution Region header
         const execMatch = line.match(EXEC_REGION_RE);
-        if (execMatch) {
+        const eideExecMatch = execMatch ? null : line.match(EIDE_EXEC_REGION_RE);
+        if (execMatch || eideExecMatch) {
+          const name = (execMatch || eideExecMatch)![1];
+          const execBase = parseInt((execMatch || eideExecMatch)![2], 16);
+          const loadBase = execMatch ? parseInt(execMatch[3], 16) : execBase;
+          const size = parseInt(execMatch ? execMatch[4] : eideExecMatch![3], 16);
+          const maxSize = parseInt(execMatch ? execMatch[5] : eideExecMatch![4], 16);
           currentExecRegion = {
-            name: execMatch[1],
-            execBase: parseInt(execMatch[2], 16),
-            loadBase: parseInt(execMatch[3], 16),
-            size: parseInt(execMatch[4], 16),
-            maxSize: parseInt(execMatch[5], 16),
+            name,
+            execBase,
+            loadBase,
+            size,
+            maxSize,
             sections: [],
           };
           currentLoadRegion?.executionRegions.push(currentExecRegion);
@@ -124,16 +133,18 @@ export function parseMapFile(content: string): MapFileData {
 
         // Memory map data line
         const dataMatch = line.match(MEMORY_LINE_RE);
-        if (dataMatch) {
-          const sectionName = dataMatch[8].trim();
+        const eideDataMatch = dataMatch ? null : line.match(EIDE_MEMORY_LINE_RE);
+        if (dataMatch || eideDataMatch) {
+          const match = (dataMatch || eideDataMatch)!;
+          const sectionName = (dataMatch ? match[8] : match[7]).trim();
           const section: MemorySection = {
-            execAddr: parseInt(dataMatch[1], 16),
-            loadAddr: (dataMatch[2] === '-' || dataMatch[2] === 'COMPRESSED') ? null : parseInt(dataMatch[2], 16),
-            size: parseInt(dataMatch[3], 16),
-            type: dataMatch[4] as SectionType,
-            attr: dataMatch[5] as SectionAttr,
+            execAddr: parseInt(match[1], 16),
+            loadAddr: dataMatch ? ((match[2] === '-' || match[2] === 'COMPRESSED') ? null : parseInt(match[2], 16)) : null,
+            size: parseInt(dataMatch ? match[3] : match[2], 16),
+            type: (dataMatch ? match[4] : match[3]) as SectionType,
+            attr: (dataMatch ? match[5] : match[4]) as SectionAttr,
             sectionName,
-            objectName: dataMatch[9],
+            objectName: dataMatch ? match[9] : match[8],
             functionName: extractFunctionName(sectionName, compilerVersion),
             isOutlinedFunction: /^\.text\.OUTLINED_FUNCTION_\d+$/.test(sectionName),
           };
@@ -143,11 +154,13 @@ export function parseMapFile(content: string): MapFileData {
 
         // PAD-only line (no attr/index/section/object)
         const padMatch = line.match(PAD_LINE_RE);
-        if (padMatch) {
+        const eidePadMatch = padMatch ? null : line.match(EIDE_PAD_LINE_RE);
+        if (padMatch || eidePadMatch) {
+          const match = (padMatch || eidePadMatch)!;
           const section: MemorySection = {
-            execAddr: parseInt(padMatch[1], 16),
-            loadAddr: (padMatch[2] === '-' || padMatch[2] === 'COMPRESSED') ? null : parseInt(padMatch[2], 16),
-            size: parseInt(padMatch[3], 16),
+            execAddr: parseInt(match[1], 16),
+            loadAddr: padMatch ? ((match[2] === '-' || match[2] === 'COMPRESSED') ? null : parseInt(match[2], 16)) : null,
+            size: parseInt(padMatch ? match[3] : match[2], 16),
             type: 'PAD',
             attr: 'RO',
             sectionName: 'PAD',

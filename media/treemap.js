@@ -102,7 +102,10 @@
     }
 
     const root = buildHierarchy(treeData);
-    if (!root || root.value === 0) return;
+    if (!root || root.value === 0) {
+      container.textContent = 'No detail data available for this selection.';
+      return;
+    }
 
     squarify(root, 0, titleOffset, width, height - titleOffset, 0);
     renderNodes(container, root, width, height);
@@ -441,13 +444,13 @@
 
   function collectSectionsForModule(node, moduleName, result) {
     if (!node.children || node.children.length === 0) {
-      if (node.objectFile === moduleName || node.name === moduleName) {
+      if (matchesModuleName(node.objectFile, moduleName) || matchesModuleName(node.name, moduleName)) {
         result.push(node);
       }
       return;
     }
     // If this node IS the target module, take all its children
-    if (node.name === moduleName && node.children) {
+    if (matchesModuleName(node.name, moduleName) && node.children) {
       for (var i = 0; i < node.children.length; i++) {
         result.push(node.children[i]);
       }
@@ -456,6 +459,12 @@
     for (var i = 0; i < node.children.length; i++) {
       collectSectionsForModule(node.children[i], moduleName, result);
     }
+  }
+
+  function matchesModuleName(candidate, moduleName) {
+    if (!candidate || !moduleName) return false;
+    if (candidate === moduleName) return true;
+    return candidate.endsWith('(' + moduleName + ')') || candidate.endsWith('] ' + moduleName);
   }
 
   function showTooltip(event, node) {
