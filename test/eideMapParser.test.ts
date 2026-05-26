@@ -6,7 +6,7 @@ import { buildRegionTree } from '../src/transformer/treeBuilder';
 
 describe('EIDE/ArmLink map parsing', () => {
   it('parses execution regions and memory sections from EIDE map files', () => {
-    const mapPath = path.join(__dirname, '..', 'test_map', 'STM32F429IGT6_Eide.map');
+    const mapPath = path.join(__dirname, 'fixtures', 'eide-arm-link-map.txt');
     const data = parseMapFile(fs.readFileSync(mapPath, 'utf8'));
     const execRegions = data.loadRegions.flatMap(region => region.executionRegions);
     const sectionCount = execRegions.reduce((sum, region) => sum + region.sections.length, 0);

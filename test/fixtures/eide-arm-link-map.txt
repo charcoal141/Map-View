@@ -1,0 +1,41 @@
+Component: ARM Compiler 5.06 update 7 (build 960) Tool: armlink [4d3601]
+
+==============================================================================
+
+Memory Map of the image
+
+  Image Entry point : 0x080081ad
+
+  Load Region LR_IROM1 (Base: 0x08008000, Size: 0x00000140, Max: 0x000fc000, ABSOLUTE, COMPRESSED[0x00000140])
+
+    Execution Region ER_IROM1 (Base: 0x08008000, Size: 0x00000100, Max: 0x000fc000, ABSOLUTE)
+
+    Base Addr    Size         Type   Attr      Idx    E Section Name        Object
+
+    0x08008000   0x00000040   Data   RO            1    RESET               startup_stm32f429xx.o
+    0x08008040   0x00000020   Code   RO            2    .text               startup_stm32f429xx.o
+    0x08008060   0x00000002   PAD
+    0x08008062   0x0000009e   Code   RO            3    i.main              main.o
+
+    Execution Region RW_IRAM1 (Base: 0x20000000, Size: 0x00000040, Max: 0x0001c000, ABSOLUTE, COMPRESSED[0x00000010])
+
+    Base Addr    Size         Type   Attr      Idx    E Section Name        Object
+
+    0x20000000   0x00000010   Data   RW            4    .data               main.o
+    0x20000010   0x00000030   Zero   RW            5    .bss                main.o
+
+==============================================================================
+
+Image component sizes
+
+      Code (inc. data)   RO Data    RW Data    ZI Data      Debug   Object Name
+
+       190          0         64         16         48          0   main.o
+        32          0         64          0          0          0   startup_stm32f429xx.o
+
+    Grand Totals
+       222          0        128         16         48          0
+
+    Total RO  Size (Code + RO Data)                  350 (   0.34kB)
+    Total RW  Size (RW Data + ZI Data)                64 (   0.06kB)
+    Total ROM Size (Code + RO Data + RW Data)        366 (   0.36kB)
