@@ -2,7 +2,7 @@
   "name": "map-view-embedded",
   "displayName": "Map View Embedded",
   "description": "A VS Code extension that visualizes embedded .map files as interactive treemap heatmaps — see where your firmware memory goes at a glance.",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "publisher": "charcoal141",
   "repository": {
     "type": "git",

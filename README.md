@@ -62,6 +62,10 @@ Click the gear icon in the toolbar to set ROM/RAM sizes (in KB) for accurate usa
 - The ROM/RAM usage shown is based solely on what the `.map` file contains. External memory (e.g., off-chip Flash, external SRAM) or regions not reported by the linker will not appear automatically.
 - If the displayed totals seem inaccurate, click the gear icon to manually configure the actual ROM/RAM sizes for your target hardware.
 
+## Contributors
+
+- [GYM-png](https://github.com/GYM-png) — EIDE ArmLink map file support
+
 ## License
 
 MIT

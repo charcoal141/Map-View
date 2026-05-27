@@ -63,6 +63,10 @@
 - 显示的 ROM/RAM 用量完全基于 `.map` 文件中的信息。外部存储（如片外 Flash、外部 SRAM）或链接器未报告的区域不会自动显示。
 - 如果显示的总量不准确，请点击工具栏齿轮图标手动配置目标硬件的实际 ROM/RAM 大小。
 
+## 贡献者
+
+- [GYM-png](https://github.com/GYM-png) — EIDE ArmLink map 文件支持
+
 ## License
 
 MIT
